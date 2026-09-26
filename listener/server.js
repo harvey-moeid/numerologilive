@@ -1,5 +1,4 @@
-require('dotenv').catch(() => {}); // no-op guard kalau dotenv tak terpasang, env tetap bisa dari platform (Render)
-try { require('dotenv/config'); } catch (_) { /* dotenv opsional, Render biasanya inject env langsung */ }
+try { require('dotenv/config'); } catch (_) { /* dotenv opsional untuk lokal; Render inject env langsung */ }
 
 const path = require('path');
 const express = require('express');
