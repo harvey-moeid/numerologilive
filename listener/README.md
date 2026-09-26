@@ -2,12 +2,12 @@
 
 Service Node.js terpisah dari situs statis di root repo. Tugasnya:
 
-1. Konek ke TikTok Live (via `tiktok-live-connector`) untuk akun yang ditentukan, **hanya saat dinyalakan lewat panel admin**.
-2. Saat ada **komen** yang mengandung tanggal lahir (format `DD-MM-YYYY`, `DD/MM/YYYY`, `DD.MM.YYYY`, atau `DD MM YYYY`), tanggal lahirnya disimpan (tidak langsung memicu overlay).
-3. Pembacaan Angka Hidup baru **dipicu overlay** kalau penonton yang sama melakukan salah satu:
+1. Konek ke TikTok Live (via `tiktok-live-connector`) untuk akun yang ditentukan, **hanya saat dinyalakan lewat panel admin** — listener tidak pernah jalan 24/7 dengan sendirinya.
+2. Saat ada **komen** yang mengandung tanggal lahir (format `DD-MM-YYYY`, `DD/MM/YYYY`, `DD.MM.YYYY`, atau `DD MM YYYY`), tanggal lahirnya disimpan sementara di memori. Overlay hanya menampilkan indikator kecil "Menghitung untuk @akun..." — **bukan** kartu hasil.
+3. Kartu hasil Angka Hidup baru **muncul di overlay** kalau penonton yang sama melakukan salah satu:
    - Mengirim **gift senilai minimal 1 koin** (default; bisa diubah lewat env `GIFT_MIN_COINS`), atau
    - Mencapai **kelipatan 400 like kumulatif** selama live tersebut (default; bisa diubah lewat env `LIKE_THRESHOLD`) — jadi tiap penonton bisa memicu ulang tiap dia menambah 400 like lagi.
-4. Hasilnya dikirim real-time lewat WebSocket ke halaman overlay (`public/overlay.html`), dengan gaya visual berbeda untuk komen (ungu), gift (emas), dan like (pink) — siap dipakai sebagai **Browser Source** di OBS.
+4. Semuanya dikirim real-time lewat WebSocket ke halaman overlay (`public/overlay.html`, responsif untuk kanvas landscape maupun potret/mobile), dengan gaya visual berbeda untuk gift (emas) dan like (pink) — siap dipakai sebagai **Browser Source** di OBS atau app streaming lain.
 5. **Panel admin** (`public/admin.html`) berisi toggle On/Off: aktifkan listener saat mulai live, matikan saat selesai.
 
 ## Menjalankan lokal
@@ -31,10 +31,17 @@ Listener **tidak otomatis nyala** saat server start — harus di-toggle ON dari 
 | `TIKTOK_USERNAME` | ya | - | Username TikTok yang live, tanpa `@` |
 | `ADMIN_TOKEN` | ya | - | Password sederhana untuk panel admin |
 | `PORT` | tidak | `3000` | Port server |
-| `GIFT_MIN_COINS` | tidak | `1` | Nilai koin minimal gift agar memicu pembacaan |
-| `LIKE_THRESHOLD` | tidak | `400` | Kelipatan like kumulatif per penonton agar memicu pembacaan |
+| `GIFT_MIN_COINS` | tidak | `1` | Nilai koin minimal gift agar memicu kartu hasil |
+| `LIKE_THRESHOLD` | tidak | `400` | Kelipatan like kumulatif per penonton agar memicu kartu hasil |
 
 ## Deploy ke Render
+
+Dipakai dengan plan **gratis** (lihat `render.yaml` di root repo, `plan: free`) — cocok untuk kebutuhan "aktif saat dipakai saja, bukan 24/7":
+- Service otomatis tidur setelah ±15 menit tanpa traffic (hemat, gratis).
+- Listener TikTok sendiri tetap nurut ke toggle admin, tidak otomatis connect walau service sedang "bangun".
+- Kalau service sempat tidur, saat kamu buka panel admin akan ada jeda cold-start 30–60 detik sebelum halaman merespons — normal, bukan error.
+- Selama overlay dibuka di OBS/app streaming (koneksi WebSocket aktif), service tetap "bangun" sepanjang live.
+- Kalau butuh benar-benar 24/7 tanpa jeda, upgrade plan Render ke Starter dan ubah `plan: free` di `render.yaml` jadi `plan: starter`.
 
 ### Cara cepat (pakai Blueprint)
 1. Dashboard Render → **New +** → **Blueprint** → hubungkan repo ini.
@@ -55,4 +62,4 @@ Setelah deploy:
 - Akun yang dipakai harus **sedang live** saat listener dinyalakan, kalau tidak koneksi akan gagal dan `lastError` muncul di panel admin.
 - `tiktok-live-connector` mengandalkan API tidak resmi TikTok yang bisa berubah sewaktu-waktu; jika koneksi gagal terus, cek versi paket terbaru.
 - Gift dengan combo (misal Rose ditahan) baru diproses saat combo selesai (`repeatEnd`), supaya tidak spam overlay.
-- Komen berisi tanggal lahir hanya disimpan sementara di memori (per sesi listener), untuk dipakai saat penonton itu kirim gift/like yang lolos ambang batas. Tidak disimpan permanen.
+- Komen berisi tanggal lahir hanya disimpan sementara di memori (per sesi listener), untuk dipakai saat penonton itu kirim gift/like yang lolos ambang batas. Tidak ditampilkan langsung dan tidak disimpan permanen.
