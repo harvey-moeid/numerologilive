@@ -1,1 +1,324 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jalur Numerology - Overlay Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --violet-1:#8b5cf6; --violet-2:#4c1d95;
+    --gold-1:#f5c563; --gold-2:#b5651d;
+    --pink-1:#fb7185; --pink-2:#9d174d;
+    --glow: rgba(139,92,246,.55);
+    --ink: rgba(255,255,255,.9);
+  }
+  html, body { margin:0; padding:0; background: transparent; overflow:hidden; width:100%; height:100%; }
+  * { box-sizing:border-box; font-family:'Inter', 'Segoe UI', Arial, sans-serif; }
+
+  #ambient{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+  #ambient .orb{
+    position:absolute; border-radius:50%; filter: blur(50px); opacity:.35;
+    animation: drift 14s ease-in-out infinite;
+  }
+  #ambient .orb.o1{ width: 220px; height:220px; left:8%; top:18%; background: radial-gradient(circle, var(--violet-1), transparent 70%); animation-duration: 16s; }
+  #ambient .orb.o2{ width: 180px; height:180px; right:10%; top:8%; background: radial-gradient(circle, var(--gold-1), transparent 70%); animation-duration: 19s; animation-delay: -4s; }
+  #ambient .orb.o3{ width: 200px; height:200px; right:16%; bottom:14%; background: radial-gradient(circle, var(--pink-1), transparent 70%); animation-duration: 21s; animation-delay: -9s; }
+  @keyframes drift{
+    0%,100%{ transform: translate(0,0) scale(1); }
+    50%{ transform: translate(18px,-22px) scale(1.08); }
+  }
+
+  #brand{
+    position:fixed; top: clamp(10px, 3vh, 22px); left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap: clamp(7px, 1vw, 10px);
+    padding: clamp(7px, 1.3vh, 10px) clamp(16px, 3.4vw, 22px); border-radius:999px;
+    background: linear-gradient(135deg, rgba(35,22,68,.6), rgba(18,11,36,.72));
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 12px 34px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    white-space:nowrap;
+    z-index:2;
+  }
+  #brand::before{
+    content:''; position:absolute; inset:-1px; border-radius:999px; padding:1px;
+    background: linear-gradient(115deg, rgba(245,197,99,.65), rgba(139,92,246,0) 35%, rgba(139,92,246,.65) 65%, rgba(245,197,99,.65));
+    background-size: 220% 100%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: shimmer 5s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes shimmer{ to{ background-position: -220% 0; } }
+  #brand .dot{
+    width: clamp(8px, 1.1vw, 10px); height: clamp(8px, 1.1vw, 10px); border-radius:50%; flex:none; position:relative;
+    background: linear-gradient(160deg, var(--gold-1), var(--violet-1));
+    box-shadow: 0 0 10px var(--gold-1);
+  }
+  #brand .dot::after{
+    content:''; position:absolute; inset:-4px; border-radius:50%; border:1px solid rgba(245,197,99,.55);
+    animation: dotpulse 2.4s ease-out infinite;
+  }
+  @keyframes dotpulse{ 0%{ transform:scale(.7); opacity:.9;} 100%{ transform:scale(2.1); opacity:0;} }
+  #brand .brandText{
+    font-family:'Sora', sans-serif; font-weight:700; font-size: clamp(12.5px, 2.5vw, 15.5px); letter-spacing:.03em;
+    background: linear-gradient(120deg, #fff, #e6d9ff 55%, var(--gold-1));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  #brand .sub{
+    font-size: clamp(9px, 1.8vw, 10.5px); font-weight:500; letter-spacing:.14em; text-transform:uppercase;
+    color: rgba(255,255,255,.42); border-left:1px solid rgba(255,255,255,.18); padding-left: clamp(7px,1vw,10px);
+  }
+
+  #calcPill{
+    position:fixed; top: clamp(58px, 11vh, 82px); left:50%; transform:translateX(-50%) translateY(-8px);
+    display:flex; align-items:center; gap:9px;
+    padding: clamp(7px, 1.3vh, 9px) clamp(13px, 3vw, 17px); border-radius:999px;
+    background: rgba(18,11,36,.66);
+    backdrop-filter: blur(11px) saturate(150%);
+    -webkit-backdrop-filter: blur(11px) saturate(150%);
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+    white-space:nowrap; max-width:90vw;
+    opacity:0; transition: opacity .3s ease, transform .3s ease;
+    z-index:2;
+  }
+  #calcPill.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #calcPill .spinner{
+    width: clamp(10px, 2.4vw, 12px); height: clamp(10px, 2.4vw, 12px); border-radius:50%; flex:none;
+    border:2px solid rgba(255,255,255,.25); border-top-color: var(--gold-1);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  #calcPill .txt{
+    font-size: clamp(11px, 2.4vw, 13px); color:rgba(255,255,255,.85);
+    overflow:hidden; text-overflow:ellipsis; max-width: 70vw;
+  }
+  #calcPill .txt b{ color:#fff; font-weight:700; }
+
+  #stage {
+    position:fixed; left:50%; bottom: clamp(30px, 8vh, 68px); transform:translateX(-50%);
+    width: min(540px, 94vw); z-index:2;
+  }
+
+  #card {
+    position:relative; padding: clamp(16px, 3.2vw, 24px) clamp(18px, 4.2vw, 30px); border-radius:24px; overflow:hidden;
+    background: linear-gradient(150deg, rgba(35,22,68,.62), rgba(15,9,30,.74));
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 24px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.04) inset, 0 0 60px -20px var(--glow);
+    opacity:0; transform: scale(.85) translateY(26px);
+    transition: opacity .5s cubic-bezier(.2,1.4,.4,1), transform .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  #card.show { opacity:1; transform: scale(1) translateY(0); }
+  #card.hide { opacity:0; transform: scale(.92) translateY(-10px); transition: opacity .3s ease, transform .3s ease; }
+
+  #card::before{
+    content:''; position:absolute; inset:-2px; border-radius:26px; padding:2px;
+    background: linear-gradient(120deg, var(--glow), transparent 40%, var(--glow));
+    background-size: 220% 100%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity:.95; pointer-events:none;
+    animation: shimmer 4.5s linear infinite;
+  }
+  #card.gift::before{ background: linear-gradient(120deg, rgba(245,197,99,.85), transparent 40%, rgba(245,197,99,.85)); background-size:220% 100%; }
+  #card.like::before{ background: linear-gradient(120deg, rgba(251,113,133,.85), transparent 40%, rgba(251,113,133,.85)); background-size:220% 100%; }
+
+  #card::after{
+    content:''; position:absolute; top:-40%; left:-10%; width:70%; height:180%;
+    background: linear-gradient(75deg, transparent, rgba(255,255,255,.06), transparent);
+    transform: rotate(8deg); pointer-events:none;
+  }
+
+  .row{ display:flex; align-items:center; gap: clamp(12px, 3.2vw, 20px); position:relative; z-index:1; }
+
+  .numWrap{
+    position:relative; width: clamp(60px, 16.5vw, 90px); height: clamp(60px, 16.5vw, 90px); border-radius: clamp(16px, 4.2vw, 22px); flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(160deg, var(--violet-1), var(--violet-2));
+    box-shadow: 0 10px 26px rgba(139,92,246,.5), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  #card.gift .numWrap{ background: linear-gradient(160deg, var(--gold-1), var(--gold-2)); box-shadow: 0 10px 26px rgba(245,197,99,.5), inset 0 1px 0 rgba(255,255,255,.25); }
+  #card.like .numWrap{ background: linear-gradient(160deg, var(--pink-1), var(--pink-2)); box-shadow: 0 10px 26px rgba(251,113,133,.5), inset 0 1px 0 rgba(255,255,255,.2); }
+  .numWrap .num{
+    font-family:'Sora', sans-serif; font-weight:800; font-size: clamp(25px, 7.4vw, 40px); color:#fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,.4);
+  }
+  .numWrap .ring{
+    position:absolute; inset:-7px; border-radius: clamp(20px, 5.4vw, 26px); border:2px solid rgba(255,255,255,.4);
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{ 0%{ transform:scale(.9); opacity:.85;} 100%{ transform:scale(1.28); opacity:0;} }
+
+  .info{ min-width:0; flex:1; }
+  .info .nick{
+    font-family:'Sora', sans-serif; font-weight:700; font-size: clamp(15px, 3.8vw, 20px); color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .info .sub{ font-size: clamp(11.5px, 2.7vw, 13.5px); color:rgba(255,255,255,.7); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .info .label{
+    font-size: clamp(10px, 2.2vw, 11.5px); font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    margin-top: clamp(7px, 1.7vh, 10px); display:inline-flex; align-items:center; gap:6px;
+    padding: clamp(4px, 1vh, 5px) clamp(9px, 2.2vw, 11px); border-radius:999px; color:#fff;
+    background: rgba(139,92,246,.38); border:1px solid rgba(255,255,255,.2);
+    max-width:100%;
+  }
+  .info .label span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #card.gift .label{ background: rgba(245,197,99,.3); }
+  #card.like .label{ background: rgba(251,113,133,.32); }
+  .label svg{ width: clamp(10px, 2.4vw, 12px); height: clamp(10px, 2.4vw, 12px); flex:none; }
+
+  .spark{
+    position:absolute; border-radius:50%; background:#fff; pointer-events:none; opacity:0;
+  }
+  #card.gift .spark, #card.like .spark{ animation: spark 1.1s ease-out forwards; }
+  @keyframes spark{
+    0%{ opacity:0; transform:translate(0,0) scale(0);}
+    15%{ opacity:1; }
+    100%{ opacity:0; transform: translate(var(--dx), var(--dy)) scale(1); }
+  }
+
+  @media (max-width: 420px){
+    #stage{ width: min(400px, 96vw); }
+    .row{ gap:12px; }
+    #brand .sub{ display:none; }
+  }
+
+  #status{ position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.4; font-family:monospace; z-index:2; }
+</style>
+</head>
+<body>
+  <div id="ambient">
+    <div class="orb o1"></div>
+    <div class="orb o2"></div>
+    <div class="orb o3"></div>
+  </div>
+
+  <div id="status">connecting...</div>
+
+  <div id="brand">
+    <span class="dot"></span>
+    <span class="brandText">Jalur Numerology</span>
+    <span class="sub">Live</span>
+  </div>
+
+  <div id="calcPill">
+    <span class="spinner"></span>
+    <span class="txt">Menghitung untuk <b id="calcName">-</b>...</span>
+  </div>
+
+  <div id="stage">
+    <div id="card">
+      <div class="row">
+        <div class="numWrap">
+          <div class="ring"></div>
+          <div class="num" id="num">-</div>
+        </div>
+        <div class="info">
+          <div class="nick" id="nick">-</div>
+          <div class="sub">Angka Hidup dari <span id="dob">-</span></div>
+          <div class="label" id="badge"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const statusEl = document.getElementById('status');
+  const card = document.getElementById('card');
+  const numEl = document.getElementById('num');
+  const nickEl = document.getElementById('nick');
+  const dobEl = document.getElementById('dob');
+  const badgeEl = document.getElementById('badge');
+  const calcPill = document.getElementById('calcPill');
+  const calcName = document.getElementById('calcName');
+
+  const ICON_GIFT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-2.2c.1-.3.2-.6.2-1a2.5 2.5 0 0 0-4.5-1.5L12 6l-1.5-1.5A2.5 2.5 0 0 0 6 6c0 .4.1.7.2 1H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM8.5 5a.5.5 0 0 1 .5-.5c.4 0 1 .5 1.5 1L9.5 6.5A1 1 0 0 1 8.5 5.5V5zm6 0v.5a1 1 0 0 1-1 1L12.5 5.5c.5-.5 1.1-1 1.5-1a.5.5 0 0 1 .5.5zM6 10h5v9H6v-9zm7 9v-9h5v9h-5z"/></svg>';
+  const ICON_LIKE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9C.4 8.7 2 5 5.6 5c2 0 3.4 1.1 4.4 2.4C11 6.1 12.4 5 14.4 5 18 5 19.6 8.7 22 12c-2.5 4.4-10 9-10 9z"/></svg>';
+
+  let calcHideTimer = null;
+  function showCalculating(nickname){
+    calcName.textContent = nickname;
+    clearTimeout(calcHideTimer);
+    calcPill.classList.add('show');
+    calcHideTimer = setTimeout(() => calcPill.classList.remove('show'), 4000);
+  }
+
+  const queue = [];
+  let showing = false;
+
+  function spawnSparkles(){
+    for (let i=0;i<10;i++){
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const size = 3 + Math.random()*4;
+      s.style.width = s.style.height = size + 'px';
+      s.style.left = 40 + Math.random()*40 + '%';
+      s.style.top = 20 + Math.random()*40 + '%';
+      s.style.setProperty('--dx', (Math.random()*160-80) + 'px');
+      s.style.setProperty('--dy', (Math.random()*-120-20) + 'px');
+      card.appendChild(s);
+      setTimeout(()=>s.remove(), 1200);
+    }
+  }
+
+  function renderItem(data){
+    card.classList.remove('gift', 'like');
+    if (data.source === 'gift') card.classList.add('gift');
+    else if (data.source === 'like') card.classList.add('like');
+
+    numEl.textContent = data.lifePath;
+    nickEl.textContent = data.nickname;
+    nickEl.title = data.nickname;
+    dobEl.textContent = data.dob;
+
+    badgeEl.innerHTML = data.source === 'gift'
+      ? (ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>')
+      : (ICON_LIKE + '<span>' + (data.likeMilestone || '') + ' like!</span>');
+
+    card.classList.remove('hide');
+    requestAnimationFrame(()=> card.classList.add('show'));
+    spawnSparkles();
+  }
+
+  function processQueue(){
+    if (showing || queue.length === 0) return;
+    showing = true;
+    const item = queue.shift();
+    renderItem(item);
+    setTimeout(() => {
+      card.classList.remove('show');
+      card.classList.add('hide');
+      setTimeout(() => { showing = false; processQueue(); }, 320);
+    }, 5200);
+  }
+
+  function connect(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(proto + '://' + location.host);
+
+    ws.onopen = () => { statusEl.textContent = 'connected'; };
+    ws.onclose = () => { statusEl.textContent = 'disconnected, retrying...'; setTimeout(connect, 3000); };
+    ws.onerror = () => ws.close();
+
+    ws.onmessage = (ev) => {
+      let data;
+      try { data = JSON.parse(ev.data); } catch (e) { return; }
+      if (data.type === 'calculating') { showCalculating(data.nickname); return; }
+      if (data.type !== 'result') return;
+      queue.push(data);
+      processQueue();
+    };
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>
