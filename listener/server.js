@@ -11,6 +11,12 @@ const TIKTOK_USERNAME = process.env.TIKTOK_USERNAME;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const PORT = process.env.PORT || 3000;
 
+// Ambang batas pemicu pembacaan numerologi:
+// - gift minimal N koin (default 1 -> praktis semua gift, karena gift termurah = 1 koin)
+// - like kumulatif kelipatan N per penonton (default 400)
+const GIFT_MIN_COINS = parseInt(process.env.GIFT_MIN_COINS || '1', 10);
+const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '400', 10);
+
 if (!TIKTOK_USERNAME) {
   console.error('ENV TIKTOK_USERNAME belum diset. Contoh: TIKTOK_USERNAME=namaakun (tanpa @).');
   process.exit(1);
@@ -65,7 +71,7 @@ function getStatus() {
   };
 }
 
-// ---------- Numerologi dari komen/gift ----------
+// ---------- Numerologi dari komen/gift/like ----------
 const dobCache = new Map();
 // Pola tanggal umum di komen: 12-05-1999 / 12/05/1999 / 12.05.1999 / 12 05 1999
 const DATE_REGEX = /\b(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})\b/;
@@ -96,21 +102,30 @@ function buildResult(nickname, uniqueId, dob, meta) {
     pyramid,
     source: meta.source,
     giftName: meta.giftName || null,
+    likeMilestone: meta.likeMilestone || null,
     timestamp: Date.now(),
   };
 }
 
 function handleChat(data) {
   const dob = extractDob(data.comment);
-  if (!dob) return;
+  if (!dob) return; // komen tanpa tanggal lahir diabaikan (tidak memicu pembacaan)
   dobCache.set(data.uniqueId, dob);
   const result = buildResult(data.nickname, data.uniqueId, dob, { source: 'comment' });
   broadcast(result);
   console.log(`[comment] ${data.nickname} (@${data.uniqueId}) -> DOB ${dob.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
+// Pemicu 1: gift senilai minimal GIFT_MIN_COINS koin (default 1 koin)
 function handleGift(data) {
-  if (data.giftType === 1 && !data.repeatEnd) return;
+  if (data.giftType === 1 && !data.repeatEnd) return; // tunggu combo gift selesai
+
+  const coins = data.diamondCount || 0;
+  if (coins < GIFT_MIN_COINS) {
+    console.log(`[gift] ${data.nickname} kirim gift ${coins} koin, di bawah ambang ${GIFT_MIN_COINS} koin, dilewati.`);
+    return;
+  }
+
   const cached = dobCache.get(data.uniqueId);
   if (!cached) {
     console.log(`[gift] ${data.nickname} (@${data.uniqueId}) kirim gift tapi belum pernah kirim tanggal lahir di komen, dilewati.`);
@@ -121,7 +136,33 @@ function handleGift(data) {
     giftName: data.giftName,
   });
   broadcast(result);
-  console.log(`[gift:${data.giftName}] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
+  console.log(`[gift:${data.giftName} (${coins} koin)] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
+}
+
+// Pemicu 2: like kumulatif per penonton mencapai kelipatan LIKE_THRESHOLD (default 400)
+const likeCrossed = new Map(); // uniqueId -> kelipatan terakhir yang sudah dipicu
+
+function handleLike(data) {
+  const total = data.totalLikeCount || 0;
+  if (total <= 0) return;
+
+  const currentMultiple = Math.floor(total / LIKE_THRESHOLD);
+  const lastMultiple = likeCrossed.get(data.uniqueId) || 0;
+  if (currentMultiple <= lastMultiple) return; // belum mencapai kelipatan baru
+  likeCrossed.set(data.uniqueId, currentMultiple);
+
+  const milestone = currentMultiple * LIKE_THRESHOLD;
+  const cached = dobCache.get(data.uniqueId);
+  if (!cached) {
+    console.log(`[like] ${data.nickname} (@${data.uniqueId}) capai ${milestone} like tapi belum pernah kirim tanggal lahir di komen, dilewati.`);
+    return;
+  }
+  const result = buildResult(data.nickname, data.uniqueId, cached, {
+    source: 'like',
+    likeMilestone: milestone,
+  });
+  broadcast(result);
+  console.log(`[like:${milestone}] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
 // ---------- Start / stop listener TikTok ----------
@@ -134,6 +175,7 @@ function startListener() {
   connection = new WebcastPushConnection(state.username);
   connection.on('chat', handleChat);
   connection.on('gift', handleGift);
+  connection.on('like', handleLike);
   connection.on('disconnected', () => {
     if (!state.running) return; // sudah dihentikan manual, jangan auto-reconnect
     console.warn('Koneksi TikTok Live terputus, mencoba reconnect dalam 5 detik...');
@@ -193,5 +235,6 @@ wss.on('connection', (ws) => {
 server.listen(PORT, () => {
   console.log(`Server jalan di port ${PORT}`);
   console.log(`Panel admin: /admin.html  |  Overlay OBS: /overlay.html`);
+  console.log(`Aturan pemicu: gift >= ${GIFT_MIN_COINS} koin, atau like kelipatan ${LIKE_THRESHOLD} per penonton.`);
   console.log('Listener TikTok dalam keadaan OFF. Nyalakan lewat panel admin.');
 });
