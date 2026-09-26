@@ -107,13 +107,20 @@ function buildResult(nickname, uniqueId, dob, meta) {
   };
 }
 
+// Komen berisi tanggal lahir TIDAK menampilkan kartu hasil di overlay.
+// Cukup tandai overlay dengan indikator kecil "sedang menghitung @akun",
+// hasil lengkap baru tampil saat penonton itu kirim gift/like yang lolos ambang batas.
 function handleChat(data) {
   const dob = extractDob(data.comment);
-  if (!dob) return; // komen tanpa tanggal lahir diabaikan (tidak memicu pembacaan)
+  if (!dob) return;
   dobCache.set(data.uniqueId, dob);
-  const result = buildResult(data.nickname, data.uniqueId, dob, { source: 'comment' });
-  broadcast(result);
-  console.log(`[comment] ${data.nickname} (@${data.uniqueId}) -> DOB ${dob.iso} -> Angka Hidup ${result.lifePath}`);
+  broadcast({
+    type: 'calculating',
+    nickname: data.nickname,
+    uniqueId: data.uniqueId,
+    timestamp: Date.now(),
+  });
+  console.log(`[comment] ${data.nickname} (@${data.uniqueId}) kirim tanggal lahir -> disimpan, menunggu gift/like.`);
 }
 
 // Pemicu 1: gift senilai minimal GIFT_MIN_COINS koin (default 1 koin)
@@ -235,6 +242,6 @@ wss.on('connection', (ws) => {
 server.listen(PORT, () => {
   console.log(`Server jalan di port ${PORT}`);
   console.log(`Panel admin: /admin.html  |  Overlay OBS: /overlay.html`);
-  console.log(`Aturan pemicu: gift >= ${GIFT_MIN_COINS} koin, atau like kelipatan ${LIKE_THRESHOLD} per penonton.`);
+  console.log(`Aturan pemicu kartu hasil: gift >= ${GIFT_MIN_COINS} koin, atau like kelipatan ${LIKE_THRESHOLD} per penonton. Komen hanya memicu indikator 'sedang menghitung'.`);
   console.log('Listener TikTok dalam keadaan OFF. Nyalakan lewat panel admin.');
 });
