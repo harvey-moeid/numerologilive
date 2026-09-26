@@ -39,6 +39,32 @@
     -webkit-background-clip:text; background-clip:text; color:transparent;
   }
 
+  /* Indikator kecil saat penonton baru kirim tanggal lahir di komen (belum trigger kartu hasil) */
+  #calcPill{
+    position:fixed; top: clamp(52px, 10vh, 76px); left:50%; transform:translateX(-50%) translateY(-8px);
+    display:flex; align-items:center; gap:8px;
+    padding: clamp(6px, 1.2vh, 8px) clamp(12px, 3vw, 16px); border-radius:999px;
+    background: rgba(20,12,40,.6);
+    backdrop-filter: blur(10px) saturate(140%);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 8px 20px rgba(0,0,0,.3);
+    white-space:nowrap; max-width:90vw;
+    opacity:0; transition: opacity .3s ease, transform .3s ease;
+  }
+  #calcPill.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  #calcPill .spinner{
+    width: clamp(10px, 2.4vw, 12px); height: clamp(10px, 2.4vw, 12px); border-radius:50%; flex:none;
+    border:2px solid rgba(255,255,255,.25); border-top-color: var(--gold-1);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  #calcPill .txt{
+    font-size: clamp(11px, 2.4vw, 13px); color:rgba(255,255,255,.85);
+    overflow:hidden; text-overflow:ellipsis; max-width: 70vw;
+  }
+  #calcPill .txt b{ color:#fff; font-weight:700; }
+
   #stage {
     position:fixed; left:50%; bottom: clamp(28px, 8vh, 64px); transform:translateX(-50%);
     width: min(520px, 94vw);
@@ -133,6 +159,11 @@
     <span class="brandText">Jalur Numerology</span>
   </div>
 
+  <div id="calcPill">
+    <span class="spinner"></span>
+    <span class="txt">Menghitung untuk <b id="calcName">-</b>...</span>
+  </div>
+
   <div id="stage">
     <div id="card">
       <div class="row">
@@ -157,12 +188,22 @@
   const nickEl = document.getElementById('nick');
   const dobEl = document.getElementById('dob');
   const badgeEl = document.getElementById('badge');
+  const calcPill = document.getElementById('calcPill');
+  const calcName = document.getElementById('calcName');
 
-  const ICON_COMMENT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v12H7l-3 3V4z"/></svg>';
   const ICON_GIFT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-2.2c.1-.3.2-.6.2-1a2.5 2.5 0 0 0-4.5-1.5L12 6l-1.5-1.5A2.5 2.5 0 0 0 6 6c0 .4.1.7.2 1H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM8.5 5a.5.5 0 0 1 .5-.5c.4 0 1 .5 1.5 1L9.5 6.5A1 1 0 0 1 8.5 5.5V5zm6 0v.5a1 1 0 0 1-1 1L12.5 5.5c.5-.5 1.1-1 1.5-1a.5.5 0 0 1 .5.5zM6 10h5v9H6v-9zm7 9v-9h5v9h-5z"/></svg>';
   const ICON_LIKE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9C.4 8.7 2 5 5.6 5c2 0 3.4 1.1 4.4 2.4C11 6.1 12.4 5 14.4 5 18 5 19.6 8.7 22 12c-2.5 4.4-10 9-10 9z"/></svg>';
 
-  // Antrian: kalau beberapa event masuk beruntun, tampil bergantian, tidak saling timpa
+  // Indikator "sedang menghitung" (dari komen berisi tanggal lahir) - tampil singkat, tidak diantrikan
+  let calcHideTimer = null;
+  function showCalculating(nickname){
+    calcName.textContent = nickname;
+    clearTimeout(calcHideTimer);
+    calcPill.classList.add('show');
+    calcHideTimer = setTimeout(() => calcPill.classList.remove('show'), 4000);
+  }
+
+  // Antrian kartu hasil: kalau beberapa gift/like beruntun trigger, tampil bergantian
   const queue = [];
   let showing = false;
 
@@ -191,17 +232,13 @@
     nickEl.title = data.nickname;
     dobEl.textContent = data.dob;
 
-    if (data.source === 'gift') {
-      badgeEl.innerHTML = ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>';
-    } else if (data.source === 'like') {
-      badgeEl.innerHTML = ICON_LIKE + '<span>' + (data.likeMilestone || '') + ' like!</span>';
-    } else {
-      badgeEl.innerHTML = ICON_COMMENT + '<span>Komen live</span>';
-    }
+    badgeEl.innerHTML = data.source === 'gift'
+      ? (ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>')
+      : (ICON_LIKE + '<span>' + (data.likeMilestone || '') + ' like!</span>');
 
     card.classList.remove('hide');
     requestAnimationFrame(()=> card.classList.add('show'));
-    if (data.source === 'gift' || data.source === 'like') spawnSparkles();
+    spawnSparkles();
   }
 
   function processQueue(){
@@ -227,6 +264,7 @@
     ws.onmessage = (ev) => {
       let data;
       try { data = JSON.parse(ev.data); } catch (e) { return; }
+      if (data.type === 'calculating') { showCalculating(data.nickname); return; }
       if (data.type !== 'result') return;
       queue.push(data);
       processQueue();
