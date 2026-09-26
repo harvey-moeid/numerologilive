@@ -23,20 +23,13 @@
   .status-dot.on { background:#22c55e; box-shadow:0 0 8px #22c55e; }
   .status-dot.connecting { background:#eab308; box-shadow:0 0 8px #eab308; }
   .status-text { font-size:14px; font-weight:600; }
-
   .switch { position:relative; width:58px; height:32px; }
   .switch input { opacity:0; width:0; height:0; }
-  .slider {
-    position:absolute; inset:0; background:#3a3160; border-radius:999px; cursor:pointer; transition:.25s;
-  }
-  .slider::before {
-    content:''; position:absolute; width:24px; height:24px; left:4px; top:4px;
-    background:#fff; border-radius:50%; transition:.25s;
-  }
+  .slider { position:absolute; inset:0; background:#3a3160; border-radius:999px; cursor:pointer; transition:.25s; }
+  .slider::before { content:''; position:absolute; width:24px; height:24px; left:4px; top:4px; background:#fff; border-radius:50%; transition:.25s; }
   input:checked + .slider { background:#7c3aed; }
   input:checked + .slider::before { transform: translateX(26px); }
   input:disabled + .slider { opacity:.5; cursor:not-allowed; }
-
   .meta { font-size:12.5px; color:#cabff0; line-height:1.6; background:#150f2b; border-radius:12px; padding:12px 14px; }
   .meta b { color:#fff; }
   .err { color:#f87171; margin-top:10px; font-size:12.5px; word-break:break-word; }
@@ -56,35 +49,21 @@
     <div class="brand"><span class="dot"></span><span>Jalur Numerology</span></div>
     <h1>Listener TikTok Live</h1>
     <p class="sub">Nyalakan untuk mulai membaca komen &amp; gift live.</p>
-
     <div class="row">
-      <div>
-        <span class="status-dot" id="dot"></span>
-        <span class="status-text" id="statusText">Memuat...</span>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="toggle" disabled>
-        <span class="slider"></span>
-      </label>
+      <div><span class="status-dot" id="dot"></span><span class="status-text" id="statusText">Memuat...</span></div>
+      <label class="switch"><input type="checkbox" id="toggle" disabled><span class="slider"></span></label>
     </div>
-
-    <div class="meta">
-      Akun TikTok: <b id="username">-</b><br>
-      Room ID: <b id="roomId">-</b>
-    </div>
+    <div class="meta">Akun TikTok: <b id="username">-</b><br>Room ID: <b id="roomId">-</b></div>
     <div class="err" id="err"></div>
-
     <div class="testBox">
       <button class="testBtn" id="testBtn" type="button" disabled>Jalankan Live Testing</button>
       <div class="testSummary" id="testSummary">Tes sintetis tanpa mengubah koneksi TikTok.</div>
     </div>
-
     <div class="tokenBox" id="tokenBox" style="display:none">
       <label for="tokenInput">Admin token</label>
       <input type="password" id="tokenInput" placeholder="Masukkan ADMIN_TOKEN">
     </div>
   </div>
-
 <script>
 (function(){
   const dot = document.getElementById('dot');
@@ -97,24 +76,19 @@
   const tokenInput = document.getElementById('tokenInput');
   const testBtn = document.getElementById('testBtn');
   const testSummary = document.getElementById('testSummary');
-
   let token = localStorage.getItem('adminToken') || '';
   let applyingRemote = false;
 
-  function headers(){
-    return { 'Content-Type': 'application/json', 'x-admin-token': token };
-  }
+  function headers(){ return { 'Content-Type': 'application/json', 'x-admin-token': token }; }
 
   function render(s){
     usernameEl.textContent = s.username || '-';
     roomIdEl.textContent = s.roomId || '-';
     errEl.textContent = s.lastError ? ('Error terakhir: ' + s.lastError) : '';
-
     applyingRemote = true;
     toggle.checked = !!s.running;
     applyingRemote = false;
     toggle.disabled = !!s.connecting;
-
     dot.className = 'status-dot' + (s.running ? ' on' : (s.connecting ? ' connecting' : ''));
     statusText.textContent = s.connecting ? 'Menghubungkan...' : (s.running ? 'AKTIF - listening' : 'OFF');
   }
@@ -128,9 +102,7 @@
       toggle.disabled = false;
       testBtn.disabled = false;
       render(data);
-    } catch (e) {
-      statusText.textContent = 'Gagal memuat status';
-    }
+    } catch (e) { statusText.textContent = 'Gagal memuat status'; }
   }
 
   function promptToken(msg){
@@ -150,8 +122,9 @@
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Live testing gagal.');
       testSummary.className = 'testSummary ' + (data.pass ? 'pass' : 'fail');
-      testSummary.innerHTML = '<b>' + (data.pass ? 'LULUS' : 'GAGAL') + '</b> — ' + data.passed + '/' + data.total + ' tes<br><small>' +
-        data.results.map(r => (r.pass ? '✓ ' : '✗ ') + r.name + ': ' + r.detail).join('<br>') + '</small>';
+      const icon = data.pass ? 'PASS' : 'FAIL';
+      const details = (data.results || []).map(r => (r.pass ? 'PASS' : 'FAIL') + ' - ' + r.name + ': ' + r.detail).join('<br>');
+      testSummary.innerHTML = '<b>' + (data.pass ? 'LULUS' : 'GAGAL') + '</b> - ' + data.passed + '/' + data.total + ' tes<br><small>' + details + '</small>';
     } catch (e) {
       testSummary.className = 'testSummary fail';
       testSummary.textContent = 'Live testing gagal: ' + e.message;
@@ -182,7 +155,6 @@
   if (!token) promptToken();
   else fetchStatus();
 
-  // Live update lewat WebSocket supaya status tetap sinkron walau dibuka di banyak tab
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(proto + '://' + location.host);
   ws.onmessage = (ev) => {

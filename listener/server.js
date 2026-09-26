@@ -11,9 +11,6 @@ const TIKTOK_USERNAME = process.env.TIKTOK_USERNAME;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const PORT = process.env.PORT || 3000;
 
-// Ambang batas pemicu pembacaan numerologi:
-// - gift minimal N koin (default 1 -> praktis semua gift, karena gift termurah = 1 koin)
-// - like kumulatif kelipatan N per penonton (default 400)
 const GIFT_MIN_COINS = parseInt(process.env.GIFT_MIN_COINS || '1', 10);
 const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '400', 10);
 
@@ -39,7 +36,6 @@ function broadcast(data) {
   });
 }
 
-// ---------- State listener (on/off dikontrol dari panel admin) ----------
 const state = {
   running: false,
   connecting: false,
@@ -71,9 +67,7 @@ function getStatus() {
   };
 }
 
-// ---------- Numerologi dari komen/gift/like ----------
 const dobCache = new Map();
-// Pola tanggal umum di komen: 12-05-1999 / 12/05/1999 / 12.05.1999 / 12 05 1999
 const DATE_REGEX = /\b(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})\b/;
 
 function extractDob(text) {
@@ -107,9 +101,6 @@ function buildResult(nickname, uniqueId, dob, meta) {
   };
 }
 
-// Komen berisi tanggal lahir TIDAK menampilkan kartu hasil di overlay.
-// Cukup tandai overlay dengan indikator kecil "sedang menghitung @akun",
-// hasil lengkap baru tampil saat penonton itu kirim gift/like yang lolos ambang batas.
 function handleChat(data) {
   const dob = extractDob(data.comment);
   if (!dob) return;
@@ -123,9 +114,8 @@ function handleChat(data) {
   console.log(`[comment] ${data.nickname} (@${data.uniqueId}) kirim tanggal lahir -> disimpan, menunggu gift/like.`);
 }
 
-// Pemicu 1: gift senilai minimal GIFT_MIN_COINS koin (default 1 koin)
 function handleGift(data) {
-  if (data.giftType === 1 && !data.repeatEnd) return; // tunggu combo gift selesai
+  if (data.giftType === 1 && !data.repeatEnd) return;
 
   const coins = data.diamondCount || 0;
   if (coins < GIFT_MIN_COINS) {
@@ -146,8 +136,7 @@ function handleGift(data) {
   console.log(`[gift:${data.giftName} (${coins} koin)] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
-// Pemicu 2: like kumulatif per penonton mencapai kelipatan LIKE_THRESHOLD (default 400)
-const likeCrossed = new Map(); // uniqueId -> kelipatan terakhir yang sudah dipicu
+const likeCrossed = new Map();
 
 function handleLike(data) {
   const total = data.totalLikeCount || 0;
@@ -155,7 +144,7 @@ function handleLike(data) {
 
   const currentMultiple = Math.floor(total / LIKE_THRESHOLD);
   const lastMultiple = likeCrossed.get(data.uniqueId) || 0;
-  if (currentMultiple <= lastMultiple) return; // belum mencapai kelipatan baru
+  if (currentMultiple <= lastMultiple) return;
   likeCrossed.set(data.uniqueId, currentMultiple);
 
   const milestone = currentMultiple * LIKE_THRESHOLD;
@@ -172,9 +161,8 @@ function handleLike(data) {
   console.log(`[like:${milestone}] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
-// ---------- Start / stop listener TikTok ----------
 function startListener() {
-  if (state.running || state.connecting) return; // sudah jalan, abaikan
+  if (state.running || state.connecting) return;
   state.connecting = true;
   state.lastError = null;
   broadcastStatus();
@@ -184,7 +172,7 @@ function startListener() {
   connection.on('gift', handleGift);
   connection.on('like', handleLike);
   connection.on('disconnected', () => {
-    if (!state.running) return; // sudah dihentikan manual, jangan auto-reconnect
+    if (!state.running) return;
     console.warn('Koneksi TikTok Live terputus, mencoba reconnect dalam 5 detik...');
     state.running = false;
     state.roomId = null;
@@ -223,7 +211,6 @@ function stopListener() {
   broadcastStatus();
 }
 
-// ---------- API admin (dilindungi token) ----------
 function checkAdminToken(req, res, next) {
   const token = req.header('x-admin-token');
   if (token !== ADMIN_TOKEN) return res.status(401).json({ error: 'Token admin salah atau kosong.' });
@@ -234,7 +221,6 @@ app.get('/api/status', checkAdminToken, (req, res) => res.json(getStatus()));
 app.post('/api/start', checkAdminToken, (req, res) => { startListener(); res.json(getStatus()); });
 app.post('/api/stop', checkAdminToken, (req, res) => { stopListener(); res.json(getStatus()); });
 
-// ---------- Live Testing (admin) ----------
 function runLiveTests() {
   const todayISO = new Date().toISOString().slice(0, 10);
   const cases = [
@@ -245,21 +231,38 @@ function runLiveTests() {
   ];
 
   const results = cases.map((test) => {
-    const match = test.dob.match(/^(\\d{1,2})[\\/\\-. ](\\d{1,2})[\\/\\-. ](\\d{4})$/);
+    const match = test.dob.match(/^(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})$/);
     if (!match) return { name: test.name, pass: false, detail: 'Format test tidak valid.' };
-    const d = Number(match[1]), m = Number(match[2]), y = Number(match[3]);
+
+    const d = Number(match[1]);
+    const m = Number(match[2]);
+    const y = Number(match[3]);
     const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const validation = validateDob(iso, todayISO);
 
     if (test.expectInvalid) {
-      return { name: test.name, pass: !validation.valid, detail: validation.valid ? 'Tanggal masa depan diterima.' : `Ditolak: ${validation.reason}` };
+      return {
+        name: test.name,
+        pass: !validation.valid,
+        detail: validation.valid ? 'Tanggal masa depan diterima.' : `Ditolak: ${validation.reason}`,
+      };
     }
-    if (!validation.valid) return { name: test.name, pass: false, detail: `Validasi gagal: ${validation.reason}` };
+
+    if (!validation.valid) {
+      return { name: test.name, pass: false, detail: `Validasi gagal: ${validation.reason}` };
+    }
 
     const lifePath = calculateLifePath(d, m, y);
     const pyramid = calculatePyramid(iso);
-    const pass = lifePath === test.expectedLifePath || (test.checkPyramid && pyramid && pyramid.apex >= 1 && pyramid.apex <= 9);
-    return { name: test.name, pass, detail: `DOB ${iso} -> Angka Hidup ${lifePath}, apex ${pyramid.apex}` };
+    const pass = test.checkPyramid
+      ? !!pyramid && Number.isInteger(pyramid.apex) && pyramid.apex >= 1 && pyramid.apex <= 9
+      : lifePath === test.expectedLifePath;
+
+    return {
+      name: test.name,
+      pass,
+      detail: `DOB ${iso} -> Angka Hidup ${lifePath}, apex ${pyramid.apex}`,
+    };
   });
 
   return {
@@ -275,11 +278,13 @@ function runLiveTests() {
 }
 
 app.post('/api/test/live', checkAdminToken, (req, res) => {
-  try { res.json(runLiveTests()); }
-  catch (err) { res.status(500).json({ type: 'test-result', pass: false, error: err.message || String(err) }); }
+  try {
+    res.json(runLiveTests());
+  } catch (err) {
+    res.status(500).json({ type: 'test-result', pass: false, error: err.message || String(err) });
+  }
 });
 
-// Kirim status terkini ke setiap client WebSocket baru yang connect (overlay/admin)
 wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'status', ...getStatus() }));
 });
