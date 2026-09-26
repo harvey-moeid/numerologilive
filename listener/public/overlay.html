@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Overlay Numerologi Live</title>
+<style>
+  html, body { margin:0; padding:0; background: transparent; overflow:hidden; font-family: 'Segoe UI', Arial, sans-serif; }
+  #card {
+    position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px);
+    min-width: 360px; max-width: 460px; padding: 20px 26px; border-radius: 18px;
+    background: linear-gradient(135deg, rgba(76,29,149,0.92), rgba(124,58,237,0.92));
+    color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    opacity: 0; transition: opacity .35s ease, transform .35s ease;
+  }
+  #card.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .row { display:flex; align-items:center; gap:14px; }
+  .num { font-size: 48px; font-weight: 800; background: rgba(255,255,255,0.15); border-radius: 14px; padding: 6px 18px; }
+  .info .nick { font-size: 18px; font-weight: 700; }
+  .info .sub { font-size: 13px; opacity: .85; margin-top:2px; }
+  .badge { display:inline-block; margin-top:6px; font-size:11px; padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.2); }
+  #status { position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.6; font-family:monospace; }
+</style>
+</head>
+<body>
+  <div id="status">connecting...</div>
+  <div id="card">
+    <div class="row">
+      <div class="num" id="num">-</div>
+      <div class="info">
+        <div class="nick" id="nick">-</div>
+        <div class="sub" id="sub">-</div>
+        <div class="badge" id="badge"></div>
+      </div>
+    </div>
+  </div>
+<script>
+(function(){
+  const statusEl = document.getElementById('status');
+  const card = document.getElementById('card');
+  const numEl = document.getElementById('num');
+  const nickEl = document.getElementById('nick');
+  const subEl = document.getElementById('sub');
+  const badgeEl = document.getElementById('badge');
+  let hideTimer = null;
+
+  function connect(){
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(proto + '://' + location.host);
+
+    ws.onopen = () => { statusEl.textContent = 'connected'; };
+    ws.onclose = () => { statusEl.textContent = 'disconnected, retrying...'; setTimeout(connect, 3000); };
+    ws.onerror = () => ws.close();
+
+    ws.onmessage = (ev) => {
+      let data;
+      try { data = JSON.parse(ev.data); } catch (e) { return; }
+      if (data.type !== 'result') return;
+
+      numEl.textContent = data.lifePath;
+      nickEl.textContent = data.nickname;
+      subEl.textContent = 'Angka Hidup dari ' + data.dob;
+      badgeEl.textContent = data.source === 'gift'
+        ? ('Kirim gift: ' + (data.giftName || ''))
+        : 'Komen';
+
+      clearTimeout(hideTimer);
+      card.classList.add('show');
+      hideTimer = setTimeout(() => card.classList.remove('show'), 8000);
+    };
+  }
+
+  connect();
+})();
+</script>
+</body>
+</html>
