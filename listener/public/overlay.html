@@ -10,6 +10,7 @@
   :root{
     --violet-1:#7c3aed; --violet-2:#4c1d95;
     --gold-1:#f5b942; --gold-2:#b5651d;
+    --pink-1:#fb7185; --pink-2:#9d174d;
     --glow: rgba(124,58,237,.55);
   }
   html, body { margin:0; padding:0; background: transparent; overflow:hidden; }
@@ -59,6 +60,7 @@
     opacity:.9; pointer-events:none;
   }
   #card.gift::before{ background: linear-gradient(120deg, rgba(245,185,66,.8), transparent 40%, rgba(245,185,66,.8)); }
+  #card.like::before{ background: linear-gradient(120deg, rgba(251,113,133,.8), transparent 40%, rgba(251,113,133,.8)); }
 
   .row{ display:flex; align-items:center; gap:18px; position:relative; z-index:1; }
 
@@ -69,6 +71,7 @@
     box-shadow: 0 8px 22px rgba(124,58,237,.45);
   }
   #card.gift .numWrap{ background: linear-gradient(160deg, var(--gold-1), var(--gold-2)); box-shadow: 0 8px 22px rgba(245,185,66,.45); }
+  #card.like .numWrap{ background: linear-gradient(160deg, var(--pink-1), var(--pink-2)); box-shadow: 0 8px 22px rgba(251,113,133,.45); }
   .numWrap .num{
     font-family:'Sora', sans-serif; font-weight:800; font-size:38px; color:#fff;
     text-shadow: 0 2px 10px rgba(0,0,0,.35);
@@ -92,18 +95,14 @@
     background: rgba(124,58,237,.35); border:1px solid rgba(255,255,255,.18);
   }
   #card.gift .label{ background: rgba(245,185,66,.28); }
+  #card.like .label{ background: rgba(251,113,133,.3); }
   .label svg{ width:12px; height:12px; }
 
-  .angkaLabel{
-    font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.55);
-    text-align:center; margin-top:4px;
-  }
-
-  /* sparkle buat gift */
+  /* sparkle buat gift & like */
   .spark{
     position:absolute; border-radius:50%; background:#fff; pointer-events:none; opacity:0;
   }
-  #card.gift .spark{ animation: spark 1.1s ease-out forwards; }
+  #card.gift .spark, #card.like .spark{ animation: spark 1.1s ease-out forwards; }
   @keyframes spark{
     0%{ opacity:0; transform:translate(0,0) scale(0);}
     15%{ opacity:1; }
@@ -148,6 +147,7 @@
 
   const ICON_COMMENT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v12H7l-3 3V4z"/></svg>';
   const ICON_GIFT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-2.2c.1-.3.2-.6.2-1a2.5 2.5 0 0 0-4.5-1.5L12 6l-1.5-1.5A2.5 2.5 0 0 0 6 6c0 .4.1.7.2 1H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM8.5 5a.5.5 0 0 1 .5-.5c.4 0 1 .5 1.5 1L9.5 6.5A1 1 0 0 1 8.5 5.5V5zm6 0v.5a1 1 0 0 1-1 1L12.5 5.5c.5-.5 1.1-1 1.5-1a.5.5 0 0 1 .5.5zM6 10h5v9H6v-9zm7 9v-9h5v9h-5z"/></svg>';
+  const ICON_LIKE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9C.4 8.7 2 5 5.6 5c2 0 3.4 1.1 4.4 2.4C11 6.1 12.4 5 14.4 5 18 5 19.6 8.7 22 12c-2.5 4.4-10 9-10 9z"/></svg>';
 
   // Antrian: kalau beberapa event masuk beruntun, tampil bergantian, tidak saling timpa
   const queue = [];
@@ -169,18 +169,26 @@
   }
 
   function renderItem(data){
-    card.classList.toggle('gift', data.source === 'gift');
+    card.classList.remove('gift', 'like');
+    if (data.source === 'gift') card.classList.add('gift');
+    else if (data.source === 'like') card.classList.add('like');
+
     numEl.textContent = data.lifePath;
     nickEl.textContent = data.nickname;
     nickEl.title = data.nickname;
     dobEl.textContent = data.dob;
-    badgeEl.innerHTML = data.source === 'gift'
-      ? (ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>')
-      : (ICON_COMMENT + '<span>Komen live</span>');
+
+    if (data.source === 'gift') {
+      badgeEl.innerHTML = ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>';
+    } else if (data.source === 'like') {
+      badgeEl.innerHTML = ICON_LIKE + '<span>' + (data.likeMilestone || '') + ' like!</span>';
+    } else {
+      badgeEl.innerHTML = ICON_COMMENT + '<span>Komen live</span>';
+    }
 
     card.classList.remove('hide');
     requestAnimationFrame(()=> card.classList.add('show'));
-    if (data.source === 'gift') spawnSparkles();
+    if (data.source === 'gift' || data.source === 'like') spawnSparkles();
   }
 
   function processQueue(){
