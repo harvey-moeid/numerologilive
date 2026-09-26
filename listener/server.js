@@ -234,6 +234,51 @@ app.get('/api/status', checkAdminToken, (req, res) => res.json(getStatus()));
 app.post('/api/start', checkAdminToken, (req, res) => { startListener(); res.json(getStatus()); });
 app.post('/api/stop', checkAdminToken, (req, res) => { stopListener(); res.json(getStatus()); });
 
+// ---------- Live Testing (admin) ----------
+function runLiveTests() {
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const cases = [
+    { name: 'Tanggal valid', dob: '25/01/1994', expectedLifePath: 4 },
+    { name: 'Master Number 22', dob: '29/01/1900', expectedLifePath: 22 },
+    { name: 'Piramida valid', dob: '12/04/1994', checkPyramid: true },
+    { name: 'Tanggal masa depan ditolak', dob: '31/12/2999', expectInvalid: true },
+  ];
+
+  const results = cases.map((test) => {
+    const match = test.dob.match(/^(\\d{1,2})[\\/\\-. ](\\d{1,2})[\\/\\-. ](\\d{4})$/);
+    if (!match) return { name: test.name, pass: false, detail: 'Format test tidak valid.' };
+    const d = Number(match[1]), m = Number(match[2]), y = Number(match[3]);
+    const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const validation = validateDob(iso, todayISO);
+
+    if (test.expectInvalid) {
+      return { name: test.name, pass: !validation.valid, detail: validation.valid ? 'Tanggal masa depan diterima.' : `Ditolak: ${validation.reason}` };
+    }
+    if (!validation.valid) return { name: test.name, pass: false, detail: `Validasi gagal: ${validation.reason}` };
+
+    const lifePath = calculateLifePath(d, m, y);
+    const pyramid = calculatePyramid(iso);
+    const pass = lifePath === test.expectedLifePath || (test.checkPyramid && pyramid && pyramid.apex >= 1 && pyramid.apex <= 9);
+    return { name: test.name, pass, detail: `DOB ${iso} -> Angka Hidup ${lifePath}, apex ${pyramid.apex}` };
+  });
+
+  return {
+    type: 'test-result',
+    timestamp: Date.now(),
+    pass: results.every((r) => r.pass),
+    total: results.length,
+    passed: results.filter((r) => r.pass).length,
+    results,
+    listenerRunning: state.running,
+    stateChanged: false,
+  };
+}
+
+app.post('/api/test/live', checkAdminToken, (req, res) => {
+  try { res.json(runLiveTests()); }
+  catch (err) { res.status(500).json({ type: 'test-result', pass: false, error: err.message || String(err) }); }
+});
+
 // Kirim status terkini ke setiap client WebSocket baru yang connect (overlay/admin)
 wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'status', ...getStatus() }));

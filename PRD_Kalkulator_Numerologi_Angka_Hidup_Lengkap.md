@@ -1,6 +1,6 @@
-# PRD: Kalkulator Numerologi — Angka Hidup
+# PRD: Kalkulator Numerologi â Angka Hidup
 
-Versi 1.0 — 25 September 2026
+Versi 1.0 â 25 September 2026
 
 ## Ringkasan
 Website kalkulator numerologi berbahasa Indonesia yang memungkinkan pengguna memasukkan tanggal lahir dan memperoleh Angka Hidup (Life Path Number), visual hasil, serta tafsiran yang mudah dipahami. MVP gratis, tanpa login, mobile-first, client-side dan dapat dibagikan.
@@ -40,7 +40,7 @@ Kalkulasi dilakukan di browser. Jangan menyimpan tanggal lahir ke server pada MV
 Gunakan Bahasa Indonesia natural, framing reflektif, tanpa klaim kepastian mutlak. Konten harus orisinal.
 
 ## Testing
-Uji reduksi angka, Master 11/22/33, tanggal invalid/future, share fallback, mobile viewport, keyboard, reduced motion, dan alur landing → input → result → share/reset.
+Uji reduksi angka, Master 11/22/33, tanggal invalid/future, share fallback, mobile viewport, keyboard, reduced motion, dan alur landing â input â result â share/reset.
 
 ## Definition of Done
 Rumus dan tafsiran tervalidasi, tidak ada placeholder/mojibake, semua angka didukung, validasi dan share bekerja, mobile/accessibility/SEO lulus, tidak ada secret, test dan smoke test lulus.
@@ -57,6 +57,23 @@ Rumus dan tafsiran tervalidasi, tidak ada placeholder/mojibake, semua angka didu
 9. Waktu rilis modul TikTok/OBS.
 
 ## Roadmap
-Phase 0 validation → Phase 1 MVP → Phase 1.1 polish → Phase 2 expansion → Phase 3 optional productization.
+Phase 0 validation â Phase 1 MVP â Phase 1.1 polish â Phase 2 expansion â Phase 3 optional productization.
 
 **Catatan:** rumus pada source saat ini adalah implementasi teknis awal dan tetap perlu divalidasi sebelum production release.
+
+### Live Testing di Panel Admin
+Panel admin listener menyediakan tombol **Jalankan Live Testing** yang memanggil `POST /api/test/live` dengan `ADMIN_TOKEN`.
+
+Live Testing menggunakan data sintetis dan tidak:
+- menyambungkan atau memutus koneksi TikTok Live;
+- mengubah status ON/OFF listener;
+- menyimpan tanggal lahir atau hasil ke database.
+
+Skenario minimum:
+1. tanggal lahir valid;
+2. perhitungan Angka Hidup;
+3. Master Number 22;
+4. perhitungan piramida/apex;
+5. tanggal masa depan harus ditolak.
+
+Panel menampilkan status LULUS/GAGAL, jumlah test yang lulus, dan detail setiap kasus. Endpoint dilindungi `x-admin-token`.

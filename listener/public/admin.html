@@ -40,6 +40,12 @@
   .meta { font-size:12.5px; color:#cabff0; line-height:1.6; background:#150f2b; border-radius:12px; padding:12px 14px; }
   .meta b { color:#fff; }
   .err { color:#f87171; margin-top:10px; font-size:12.5px; word-break:break-word; }
+  .testBox { margin-top:18px; padding-top:18px; border-top:1px solid #332957; }
+  .testBtn { width:100%; border:0; border-radius:10px; padding:11px 12px; background:#2b2150; color:#fff; font-weight:700; cursor:pointer; }
+  .testBtn:disabled { opacity:.55; cursor:not-allowed; }
+  .testSummary { margin-top:10px; font-size:12.5px; line-height:1.5; color:#cabff0; }
+  .testSummary.pass { color:#86efac; }
+  .testSummary.fail { color:#fca5a5; }
   .tokenBox { margin-top:18px; }
   .tokenBox input { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #3a3160; background:#150f2b; color:#fff; font-size:13px; }
   .tokenBox label { font-size:12px; color:#b6acd6; }
@@ -68,6 +74,11 @@
     </div>
     <div class="err" id="err"></div>
 
+    <div class="testBox">
+      <button class="testBtn" id="testBtn" type="button" disabled>Jalankan Live Testing</button>
+      <div class="testSummary" id="testSummary">Tes sintetis tanpa mengubah koneksi TikTok.</div>
+    </div>
+
     <div class="tokenBox" id="tokenBox" style="display:none">
       <label for="tokenInput">Admin token</label>
       <input type="password" id="tokenInput" placeholder="Masukkan ADMIN_TOKEN">
@@ -84,6 +95,8 @@
   const errEl = document.getElementById('err');
   const tokenBox = document.getElementById('tokenBox');
   const tokenInput = document.getElementById('tokenInput');
+  const testBtn = document.getElementById('testBtn');
+  const testSummary = document.getElementById('testSummary');
 
   let token = localStorage.getItem('adminToken') || '';
   let applyingRemote = false;
@@ -113,6 +126,7 @@
       const data = await res.json();
       tokenBox.style.display = 'none';
       toggle.disabled = false;
+      testBtn.disabled = false;
       render(data);
     } catch (e) {
       statusText.textContent = 'Gagal memuat status';
@@ -122,8 +136,27 @@
   function promptToken(msg){
     tokenBox.style.display = 'block';
     toggle.disabled = true;
+    testBtn.disabled = true;
     statusText.textContent = msg || 'Masukkan admin token';
   }
+
+  testBtn.addEventListener('click', async () => {
+    testBtn.disabled = true;
+    testSummary.className = 'testSummary';
+    testSummary.textContent = 'Menjalankan tes...';
+    try {
+      const res = await fetch('/api/test/live', { method: 'POST', headers: headers() });
+      if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Live testing gagal.');
+      testSummary.className = 'testSummary ' + (data.pass ? 'pass' : 'fail');
+      testSummary.innerHTML = '<b>' + (data.pass ? 'LULUS' : 'GAGAL') + '</b> — ' + data.passed + '/' + data.total + ' tes<br><small>' +
+        data.results.map(r => (r.pass ? '✓ ' : '✗ ') + r.name + ': ' + r.detail).join('<br>') + '</small>';
+    } catch (e) {
+      testSummary.className = 'testSummary fail';
+      testSummary.textContent = 'Live testing gagal: ' + e.message;
+    } finally { testBtn.disabled = false; }
+  });
 
   tokenInput.addEventListener('change', () => {
     token = tokenInput.value.trim();
