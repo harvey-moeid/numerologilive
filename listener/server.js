@@ -12,7 +12,7 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const PORT = process.env.PORT || 3000;
 
 const GIFT_MIN_COINS = parseInt(process.env.GIFT_MIN_COINS || '1', 10);
-const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '400', 10);
+const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '40', 10);
 
 if (!TIKTOK_USERNAME) {
   console.error('ENV TIKTOK_USERNAME belum diset. Contoh: TIKTOK_USERNAME=namaakun (tanpa @).');
