@@ -9,3 +9,5 @@ services:
     envVars:
       - key: TIKTOK_USERNAME
         sync: false
+      - key: ADMIN_TOKEN
+        sync: false

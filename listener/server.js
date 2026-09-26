@@ -8,16 +8,20 @@ const { WebcastPushConnection } = require('tiktok-live-connector');
 const { calculateLifePath, calculatePyramid, validateDob } = require('./calculator');
 
 const TIKTOK_USERNAME = process.env.TIKTOK_USERNAME;
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const PORT = process.env.PORT || 3000;
 
 if (!TIKTOK_USERNAME) {
   console.error('ENV TIKTOK_USERNAME belum diset. Contoh: TIKTOK_USERNAME=namaakun (tanpa @).');
   process.exit(1);
 }
+if (!ADMIN_TOKEN) {
+  console.error('ENV ADMIN_TOKEN belum diset. Set token bebas untuk mengamankan panel admin, mis. ADMIN_TOKEN=rahasia123.');
+  process.exit(1);
+}
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/health', (req, res) => res.json({ ok: true, username: TIKTOK_USERNAME }));
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -29,10 +33,40 @@ function broadcast(data) {
   });
 }
 
-// Cache tanggal lahir per penonton (uniqueId) supaya saat dia kirim gift
-// tanpa teks, kita masih tahu Angka Hidupnya dari komen sebelumnya.
-const dobCache = new Map();
+// ---------- State listener (on/off dikontrol dari panel admin) ----------
+const state = {
+  running: false,
+  connecting: false,
+  roomId: null,
+  username: TIKTOK_USERNAME,
+  lastError: null,
+};
+let connection = null;
+let reconnectTimer = null;
 
+function broadcastStatus() {
+  broadcast({
+    type: 'status',
+    running: state.running,
+    connecting: state.connecting,
+    roomId: state.roomId,
+    username: state.username,
+    lastError: state.lastError,
+  });
+}
+
+function getStatus() {
+  return {
+    running: state.running,
+    connecting: state.connecting,
+    roomId: state.roomId,
+    username: state.username,
+    lastError: state.lastError,
+  };
+}
+
+// ---------- Numerologi dari komen/gift ----------
+const dobCache = new Map();
 // Pola tanggal umum di komen: 12-05-1999 / 12/05/1999 / 12.05.1999 / 12 05 1999
 const DATE_REGEX = /\b(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})\b/;
 
@@ -68,7 +102,7 @@ function buildResult(nickname, uniqueId, dob, meta) {
 
 function handleChat(data) {
   const dob = extractDob(data.comment);
-  if (!dob) return; // komen tanpa tanggal lahir diabaikan
+  if (!dob) return;
   dobCache.set(data.uniqueId, dob);
   const result = buildResult(data.nickname, data.uniqueId, dob, { source: 'comment' });
   broadcast(result);
@@ -76,12 +110,7 @@ function handleChat(data) {
 }
 
 function handleGift(data) {
-  // Gift combo mengirim event berulang selagi user masih menahan tombol;
-  // proses hanya saat combo selesai (repeatEnd) atau gift bukan tipe combo.
   if (data.giftType === 1 && !data.repeatEnd) return;
-
-  // Gift biasa tidak membawa teks komen, jadi pakai DOB terakhir yang
-  // pernah dikirim penonton ini lewat komen.
   const cached = dobCache.get(data.uniqueId);
   if (!cached) {
     console.log(`[gift] ${data.nickname} (@${data.uniqueId}) kirim gift tapi belum pernah kirim tanggal lahir di komen, dilewati.`);
@@ -95,29 +124,74 @@ function handleGift(data) {
   console.log(`[gift:${data.giftName}] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
-function connectToTikTok() {
-  const connection = new WebcastPushConnection(TIKTOK_USERNAME);
+// ---------- Start / stop listener TikTok ----------
+function startListener() {
+  if (state.running || state.connecting) return; // sudah jalan, abaikan
+  state.connecting = true;
+  state.lastError = null;
+  broadcastStatus();
 
-  connection.connect()
-    .then((state) => console.log(`Terhubung ke live TikTok @${TIKTOK_USERNAME} (roomId ${state.roomId})`))
-    .catch((err) => {
-      console.error('Gagal konek ke TikTok Live, retry dalam 10 detik:', err.message || err);
-      setTimeout(connectToTikTok, 10000);
-    });
-
+  connection = new WebcastPushConnection(state.username);
   connection.on('chat', handleChat);
   connection.on('gift', handleGift);
   connection.on('disconnected', () => {
+    if (!state.running) return; // sudah dihentikan manual, jangan auto-reconnect
     console.warn('Koneksi TikTok Live terputus, mencoba reconnect dalam 5 detik...');
-    setTimeout(connectToTikTok, 5000);
+    state.running = false;
+    state.roomId = null;
+    broadcastStatus();
+    reconnectTimer = setTimeout(startListener, 5000);
   });
 
-  return connection;
+  connection.connect()
+    .then((info) => {
+      state.running = true;
+      state.connecting = false;
+      state.roomId = info.roomId;
+      console.log(`Listener AKTIF: terhubung ke live TikTok @${state.username} (roomId ${info.roomId})`);
+      broadcastStatus();
+    })
+    .catch((err) => {
+      state.connecting = false;
+      state.running = false;
+      state.lastError = err.message || String(err);
+      console.error('Gagal konek ke TikTok Live:', state.lastError);
+      broadcastStatus();
+    });
 }
 
-connectToTikTok();
+function stopListener() {
+  clearTimeout(reconnectTimer);
+  const wasRunning = state.running || state.connecting;
+  state.running = false;
+  state.connecting = false;
+  state.roomId = null;
+  if (connection) {
+    try { connection.disconnect(); } catch (_) { /* abaikan error saat disconnect */ }
+    connection = null;
+  }
+  if (wasRunning) console.log('Listener DIMATIKAN dari panel admin.');
+  broadcastStatus();
+}
+
+// ---------- API admin (dilindungi token) ----------
+function checkAdminToken(req, res, next) {
+  const token = req.header('x-admin-token');
+  if (token !== ADMIN_TOKEN) return res.status(401).json({ error: 'Token admin salah atau kosong.' });
+  next();
+}
+
+app.get('/api/status', checkAdminToken, (req, res) => res.json(getStatus()));
+app.post('/api/start', checkAdminToken, (req, res) => { startListener(); res.json(getStatus()); });
+app.post('/api/stop', checkAdminToken, (req, res) => { stopListener(); res.json(getStatus()); });
+
+// Kirim status terkini ke setiap client WebSocket baru yang connect (overlay/admin)
+wss.on('connection', (ws) => {
+  ws.send(JSON.stringify({ type: 'status', ...getStatus() }));
+});
 
 server.listen(PORT, () => {
-  console.log(`Listener + overlay server jalan di port ${PORT}`);
-  console.log(`Buka overlay di /overlay.html (tambahkan sebagai Browser Source di OBS)`);
+  console.log(`Server jalan di port ${PORT}`);
+  console.log(`Panel admin: /admin.html  |  Overlay OBS: /overlay.html`);
+  console.log('Listener TikTok dalam keadaan OFF. Nyalakan lewat panel admin.');
 });

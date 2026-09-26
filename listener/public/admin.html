@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Panel Admin - Listener Numerologi TikTok</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:#0f0a1f; font-family:'Segoe UI', Arial, sans-serif; color:#fff;
+  }
+  .card {
+    width: 380px; max-width: 92vw; background:#1c1436; border-radius:20px; padding:28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { font-size:13px; color:#b6acd6; margin:0 0 22px; }
+  .row { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .status-dot { width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:8px; background:#666; }
+  .status-dot.on { background:#22c55e; box-shadow:0 0 8px #22c55e; }
+  .status-dot.connecting { background:#eab308; box-shadow:0 0 8px #eab308; }
+  .status-text { font-size:14px; font-weight:600; }
+
+  .switch { position:relative; width:58px; height:32px; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider {
+    position:absolute; inset:0; background:#3a3160; border-radius:999px; cursor:pointer; transition:.25s;
+  }
+  .slider::before {
+    content:''; position:absolute; width:24px; height:24px; left:4px; top:4px;
+    background:#fff; border-radius:50%; transition:.25s;
+  }
+  input:checked + .slider { background:#7c3aed; }
+  input:checked + .slider::before { transform: translateX(26px); }
+  input:disabled + .slider { opacity:.5; cursor:not-allowed; }
+
+  .meta { font-size:12.5px; color:#cabff0; line-height:1.6; background:#150f2b; border-radius:12px; padding:12px 14px; }
+  .meta b { color:#fff; }
+  .err { color:#f87171; margin-top:10px; font-size:12.5px; word-break:break-word; }
+  .tokenBox { margin-top:18px; }
+  .tokenBox input { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #3a3160; background:#150f2b; color:#fff; font-size:13px; }
+  .tokenBox label { font-size:12px; color:#b6acd6; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Listener Numerologi TikTok</h1>
+    <p class="sub">Nyalakan untuk mulai membaca komen &amp; gift live.</p>
+
+    <div class="row">
+      <div>
+        <span class="status-dot" id="dot"></span>
+        <span class="status-text" id="statusText">Memuat...</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle" disabled>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="meta">
+      Akun TikTok: <b id="username">-</b><br>
+      Room ID: <b id="roomId">-</b>
+    </div>
+    <div class="err" id="err"></div>
+
+    <div class="tokenBox" id="tokenBox" style="display:none">
+      <label for="tokenInput">Admin token</label>
+      <input type="password" id="tokenInput" placeholder="Masukkan ADMIN_TOKEN">
+    </div>
+  </div>
+
+<script>
+(function(){
+  const dot = document.getElementById('dot');
+  const statusText = document.getElementById('statusText');
+  const toggle = document.getElementById('toggle');
+  const usernameEl = document.getElementById('username');
+  const roomIdEl = document.getElementById('roomId');
+  const errEl = document.getElementById('err');
+  const tokenBox = document.getElementById('tokenBox');
+  const tokenInput = document.getElementById('tokenInput');
+
+  let token = localStorage.getItem('adminToken') || '';
+  let applyingRemote = false;
+
+  function headers(){
+    return { 'Content-Type': 'application/json', 'x-admin-token': token };
+  }
+
+  function render(s){
+    usernameEl.textContent = s.username || '-';
+    roomIdEl.textContent = s.roomId || '-';
+    errEl.textContent = s.lastError ? ('Error terakhir: ' + s.lastError) : '';
+
+    applyingRemote = true;
+    toggle.checked = !!s.running;
+    applyingRemote = false;
+    toggle.disabled = !!s.connecting;
+
+    dot.className = 'status-dot' + (s.running ? ' on' : (s.connecting ? ' connecting' : ''));
+    statusText.textContent = s.connecting ? 'Menghubungkan...' : (s.running ? 'AKTIF - listening' : 'OFF');
+  }
+
+  async function fetchStatus(){
+    try {
+      const res = await fetch('/api/status', { headers: headers() });
+      if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      const data = await res.json();
+      tokenBox.style.display = 'none';
+      toggle.disabled = false;
+      render(data);
+    } catch (e) {
+      statusText.textContent = 'Gagal memuat status';
+    }
+  }
+
+  function promptToken(msg){
+    tokenBox.style.display = 'block';
+    toggle.disabled = true;
+    statusText.textContent = msg || 'Masukkan admin token';
+  }
+
+  tokenInput.addEventListener('change', () => {
+    token = tokenInput.value.trim();
+    localStorage.setItem('adminToken', token);
+    fetchStatus();
+  });
+
+  toggle.addEventListener('change', async () => {
+    if (applyingRemote) return;
+    const wantOn = toggle.checked;
+    toggle.disabled = true;
+    try {
+      const res = await fetch(wantOn ? '/api/start' : '/api/stop', { method: 'POST', headers: headers() });
+      if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      const data = await res.json();
+      render(data);
+    } catch (e) {
+      errEl.textContent = 'Gagal menghubungi server.';
+      toggle.disabled = false;
+    }
+  });
+
+  if (!token) promptToken();
+  else fetchStatus();
+
+  // Live update lewat WebSocket supaya status tetap sinkron walau dibuka di banyak tab
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(proto + '://' + location.host);
+  ws.onmessage = (ev) => {
+    let data;
+    try { data = JSON.parse(ev.data); } catch (e) { return; }
+    if (data.type === 'status' && token) render(data);
+  };
+
+  setInterval(() => { if (token) fetchStatus(); }, 8000);
+})();
+</script>
+</body>
+</html>
