@@ -14,7 +14,7 @@ Service Node.js terpisah dari situs statis di root repo. Tugasnya:
 
 ```bash
 cd listener
-cp .env.example .env   # isi TIKTOK_USERNAME dan ADMIN_TOKEN
+cp .env.example .env   # isi TIKTOK_USERNAME, ADMIN_TOKEN, dan SIGN_API_KEY
 npm install
 npm start
 ```
@@ -31,8 +31,17 @@ Listener **tidak otomatis nyala** saat server start — harus di-toggle ON dari 
 | `TIKTOK_USERNAME` | ya | - | Username TikTok yang live, tanpa `@` |
 | `ADMIN_TOKEN` | ya | - | Password sederhana untuk panel admin |
 | `PORT` | tidak | `3000` | Port server |
+| `SIGN_API_KEY` | sangat disarankan | - | API key dari [EulerStream](https://www.eulerstream.com) (gratis) untuk menandatangani koneksi ke TikTok Live. Tanpa ini, koneksi memakai tier gratis anonim yang sangat dibatasi dan sering gagal dengan error `Failed to sign request` (403) |
 | `GIFT_MIN_COINS` | tidak | `1` | Nilai koin minimal gift agar memicu kartu hasil |
 | `LIKE_THRESHOLD` | tidak | `400` | Kelipatan like kumulatif per penonton agar memicu kartu hasil |
+
+### Cara dapat `SIGN_API_KEY`
+
+1. Daftar akun gratis di [eulerstream.com](https://www.eulerstream.com).
+2. Buat API key dari dashboard mereka.
+3. Set sebagai environment variable `SIGN_API_KEY` (lokal di `.env`, atau di Render dashboard).
+
+Tier gratis EulerStream sudah cukup untuk pemakaian personal (satu listener, satu live pada satu waktu). Kalau butuh volume lebih besar, EulerStream juga punya paket berbayar.
 
 ## Deploy ke Render
 
@@ -46,20 +55,24 @@ Dipakai dengan plan **gratis** (lihat `render.yaml` di root repo, `plan: free`) 
 ### Cara cepat (pakai Blueprint)
 1. Dashboard Render → **New +** → **Blueprint** → hubungkan repo ini.
 2. Render otomatis baca `render.yaml` di root repo dan buat Web Service `numerologi-tiktok-listener` dengan root dir `listener`.
-3. Saat deploy pertama, isi Environment Variable `TIKTOK_USERNAME` (tanpa `@`) dan `ADMIN_TOKEN` (bebas, ini password untuk panel admin). `GIFT_MIN_COINS` dan `LIKE_THRESHOLD` opsional.
+3. Saat deploy pertama, isi Environment Variable `TIKTOK_USERNAME` (tanpa `@`), `ADMIN_TOKEN` (bebas, ini password untuk panel admin), dan `SIGN_API_KEY` (dari eulerstream.com). `GIFT_MIN_COINS` dan `LIKE_THRESHOLD` opsional.
 
 ### Cara manual
 1. New + Web Service, Root Directory `listener`, Build Command `npm install`, Start Command `npm start`.
-2. Tambahkan Environment Variables `TIKTOK_USERNAME` dan `ADMIN_TOKEN` (plus `GIFT_MIN_COINS`/`LIKE_THRESHOLD` jika mau ubah default).
+2. Tambahkan Environment Variables `TIKTOK_USERNAME`, `ADMIN_TOKEN`, dan `SIGN_API_KEY` (plus `GIFT_MIN_COINS`/`LIKE_THRESHOLD` jika mau ubah default).
 
 Setelah deploy:
 - Panel admin: `https://<nama-service>.onrender.com/admin.html`
 - Overlay (Browser Source OBS): `https://<nama-service>.onrender.com/overlay.html`
 
+## Troubleshooting
+
+- **`Failed to sign request ... status code 403`**: `SIGN_API_KEY` belum diset atau sudah tidak valid. Daftar/cek key di [eulerstream.com](https://www.eulerstream.com) dan pastikan env var-nya benar. Cek log server saat start — kalau `SIGN_API_KEY` kosong akan muncul warning eksplisit soal ini.
+- Akun yang dipakai harus **sedang live** saat listener dinyalakan, kalau tidak koneksi akan gagal dan `lastError` muncul di panel admin.
+- `tiktok-live-connector` mengandalkan API tidak resmi TikTok yang bisa berubah sewaktu-waktu; jika koneksi gagal terus meski `SIGN_API_KEY` sudah benar, cek versi paket terbaru dan changelog resminya.
+
 ## Catatan
 
 - Panel admin dilindungi `ADMIN_TOKEN` sederhana lewat header `x-admin-token` — cukup untuk mencegah orang iseng, tapi jangan bagikan link admin ke publik.
-- Akun yang dipakai harus **sedang live** saat listener dinyalakan, kalau tidak koneksi akan gagal dan `lastError` muncul di panel admin.
-- `tiktok-live-connector` mengandalkan API tidak resmi TikTok yang bisa berubah sewaktu-waktu; jika koneksi gagal terus, cek versi paket terbaru.
 - Gift dengan combo (misal Rose ditahan) baru diproses saat combo selesai (`repeatEnd`), supaya tidak spam overlay.
 - Komen berisi tanggal lahir hanya disimpan sementara di memori (per sesi listener), untuk dipakai saat penonton itu kirim gift/like yang lolos ambang batas. Tidak ditampilkan langsung dan tidak disimpan permanen.

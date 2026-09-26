@@ -12,7 +12,8 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 const PORT = process.env.PORT || 3000;
 
 const GIFT_MIN_COINS = parseInt(process.env.GIFT_MIN_COINS || '1', 10);
-const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '40', 10);
+const LIKE_THRESHOLD = parseInt(process.env.LIKE_THRESHOLD || '400', 10);
+const SIGN_API_KEY = process.env.SIGN_API_KEY || '';
 
 if (!TIKTOK_USERNAME) {
   console.error('ENV TIKTOK_USERNAME belum diset. Contoh: TIKTOK_USERNAME=namaakun (tanpa @).');
@@ -21,6 +22,9 @@ if (!TIKTOK_USERNAME) {
 if (!ADMIN_TOKEN) {
   console.error('ENV ADMIN_TOKEN belum diset. Set token bebas untuk mengamankan panel admin, mis. ADMIN_TOKEN=rahasia123.');
   process.exit(1);
+}
+if (!SIGN_API_KEY) {
+  console.warn('ENV SIGN_API_KEY belum diset. Tanpa API key, koneksi ke TikTok Live memakai tier gratis EulerStream yang sangat dibatasi dan sering gagal dengan error "Failed to sign request" (403). Daftar key gratis di https://www.eulerstream.com lalu set SIGN_API_KEY di environment variables.');
 }
 
 const app = express();
@@ -167,7 +171,8 @@ function startListener() {
   state.lastError = null;
   broadcastStatus();
 
-  connection = new WebcastPushConnection(state.username);
+  const connectionOptions = SIGN_API_KEY ? { signApiKey: SIGN_API_KEY } : {};
+  connection = new WebcastPushConnection(state.username, connectionOptions);
   connection.on('chat', handleChat);
   connection.on('gift', handleGift);
   connection.on('like', handleLike);
@@ -193,6 +198,9 @@ function startListener() {
       state.running = false;
       state.lastError = err.message || String(err);
       console.error('Gagal konek ke TikTok Live:', state.lastError);
+      if (!SIGN_API_KEY && /sign request/i.test(state.lastError)) {
+        console.error('Kemungkinan penyebab: SIGN_API_KEY belum diset. Daftar key gratis di https://www.eulerstream.com lalu set SIGN_API_KEY di environment variables.');
+      }
       broadcastStatus();
     });
 }
