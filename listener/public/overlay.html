@@ -3,45 +3,170 @@
 <head>
 <meta charset="UTF-8">
 <title>Overlay Numerologi Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  html, body { margin:0; padding:0; background: transparent; overflow:hidden; font-family: 'Segoe UI', Arial, sans-serif; }
-  #card {
-    position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%) translateY(20px);
-    min-width: 360px; max-width: 460px; padding: 20px 26px; border-radius: 18px;
-    background: linear-gradient(135deg, rgba(76,29,149,0.92), rgba(124,58,237,0.92));
-    color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    opacity: 0; transition: opacity .35s ease, transform .35s ease;
+  :root{
+    --violet-1:#7c3aed; --violet-2:#4c1d95;
+    --gold-1:#f5b942; --gold-2:#b5651d;
+    --glow: rgba(124,58,237,.55);
   }
-  #card.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .row { display:flex; align-items:center; gap:14px; }
-  .num { font-size: 48px; font-weight: 800; background: rgba(255,255,255,0.15); border-radius: 14px; padding: 6px 18px; }
-  .info .nick { font-size: 18px; font-weight: 700; }
-  .info .sub { font-size: 13px; opacity: .85; margin-top:2px; }
-  .badge { display:inline-block; margin-top:6px; font-size:11px; padding:2px 8px; border-radius:999px; background: rgba(255,255,255,0.2); }
-  #status { position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.6; font-family:monospace; }
+  html, body { margin:0; padding:0; background: transparent; overflow:hidden; }
+  * { box-sizing:border-box; font-family:'Inter', 'Segoe UI', Arial, sans-serif; }
+
+  #stage { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); width:520px; max-width:92vw; }
+
+  #card {
+    position:relative; padding:22px 28px; border-radius:22px; overflow:hidden;
+    background: linear-gradient(135deg, rgba(30,20,60,.55), rgba(20,12,40,.65));
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 20px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.03) inset;
+    opacity:0; transform: scale(.85) translateY(24px);
+    transition: opacity .45s cubic-bezier(.2,1.4,.4,1), transform .45s cubic-bezier(.2,1.4,.4,1);
+  }
+  #card.show { opacity:1; transform: scale(1) translateY(0); }
+  #card.hide { opacity:0; transform: scale(.92) translateY(-10px); transition: opacity .3s ease, transform .3s ease; }
+
+  #card::before{
+    content:''; position:absolute; inset:-2px; border-radius:24px; padding:2px;
+    background: linear-gradient(120deg, var(--glow), transparent 40%, var(--glow));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity:.9; pointer-events:none;
+  }
+  #card.gift::before{ background: linear-gradient(120deg, rgba(245,185,66,.8), transparent 40%, rgba(245,185,66,.8)); }
+
+  .row{ display:flex; align-items:center; gap:18px; position:relative; z-index:1; }
+
+  .numWrap{
+    position:relative; width:86px; height:86px; border-radius:20px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(160deg, var(--violet-1), var(--violet-2));
+    box-shadow: 0 8px 22px rgba(124,58,237,.45);
+  }
+  #card.gift .numWrap{ background: linear-gradient(160deg, var(--gold-1), var(--gold-2)); box-shadow: 0 8px 22px rgba(245,185,66,.45); }
+  .numWrap .num{
+    font-family:'Sora', sans-serif; font-weight:800; font-size:38px; color:#fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,.35);
+  }
+  .numWrap .ring{
+    position:absolute; inset:-6px; border-radius:24px; border:2px solid rgba(255,255,255,.35);
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{ 0%{ transform:scale(.9); opacity:.8;} 100%{ transform:scale(1.25); opacity:0;} }
+
+  .info{ min-width:0; flex:1; }
+  .info .nick{
+    font-family:'Sora', sans-serif; font-weight:700; font-size:19px; color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .info .sub{ font-size:13px; color:rgba(255,255,255,.68); margin-top:3px; }
+  .info .label{
+    font-size:11.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    margin-top:9px; display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:999px; color:#fff;
+    background: rgba(124,58,237,.35); border:1px solid rgba(255,255,255,.18);
+  }
+  #card.gift .label{ background: rgba(245,185,66,.28); }
+  .label svg{ width:12px; height:12px; }
+
+  .angkaLabel{
+    font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:rgba(255,255,255,.55);
+    text-align:center; margin-top:4px;
+  }
+
+  /* sparkle buat gift */
+  .spark{
+    position:absolute; border-radius:50%; background:#fff; pointer-events:none; opacity:0;
+  }
+  #card.gift .spark{ animation: spark 1.1s ease-out forwards; }
+  @keyframes spark{
+    0%{ opacity:0; transform:translate(0,0) scale(0);}
+    15%{ opacity:1; }
+    100%{ opacity:0; transform: translate(var(--dx), var(--dy)) scale(1); }
+  }
+
+  #status{ position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.45; font-family:monospace; }
 </style>
 </head>
 <body>
   <div id="status">connecting...</div>
-  <div id="card">
-    <div class="row">
-      <div class="num" id="num">-</div>
-      <div class="info">
-        <div class="nick" id="nick">-</div>
-        <div class="sub" id="sub">-</div>
-        <div class="badge" id="badge"></div>
+  <div id="stage">
+    <div id="card">
+      <div class="row">
+        <div class="numWrap">
+          <div class="ring"></div>
+          <div class="num" id="num">-</div>
+        </div>
+        <div class="info">
+          <div class="nick" id="nick">-</div>
+          <div class="sub">Angka Hidup dari <span id="dob">-</span></div>
+          <div class="label" id="badge"></div>
+        </div>
       </div>
     </div>
   </div>
+
 <script>
 (function(){
   const statusEl = document.getElementById('status');
   const card = document.getElementById('card');
   const numEl = document.getElementById('num');
   const nickEl = document.getElementById('nick');
-  const subEl = document.getElementById('sub');
+  const dobEl = document.getElementById('dob');
   const badgeEl = document.getElementById('badge');
-  let hideTimer = null;
+
+  const ICON_COMMENT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v12H7l-3 3V4z"/></svg>';
+  const ICON_GIFT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-2.2c.1-.3.2-.6.2-1a2.5 2.5 0 0 0-4.5-1.5L12 6l-1.5-1.5A2.5 2.5 0 0 0 6 6c0 .4.1.7.2 1H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM8.5 5a.5.5 0 0 1 .5-.5c.4 0 1 .5 1.5 1L9.5 6.5A1 1 0 0 1 8.5 5.5V5zm6 0v.5a1 1 0 0 1-1 1L12.5 5.5c.5-.5 1.1-1 1.5-1a.5.5 0 0 1 .5.5zM6 10h5v9H6v-9zm7 9v-9h5v9h-5z"/></svg>';
+
+  // Antrian: kalau beberapa event masuk beruntun, tampil bergantian, tidak saling timpa
+  const queue = [];
+  let showing = false;
+
+  function spawnSparkles(){
+    for (let i=0;i<10;i++){
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const size = 3 + Math.random()*4;
+      s.style.width = s.style.height = size + 'px';
+      s.style.left = 40 + Math.random()*40 + '%';
+      s.style.top = 20 + Math.random()*40 + '%';
+      s.style.setProperty('--dx', (Math.random()*160-80) + 'px');
+      s.style.setProperty('--dy', (Math.random()*-120-20) + 'px');
+      card.appendChild(s);
+      setTimeout(()=>s.remove(), 1200);
+    }
+  }
+
+  function renderItem(data){
+    card.classList.toggle('gift', data.source === 'gift');
+    numEl.textContent = data.lifePath;
+    nickEl.textContent = data.nickname;
+    nickEl.title = data.nickname;
+    dobEl.textContent = data.dob;
+    badgeEl.innerHTML = data.source === 'gift'
+      ? (ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>')
+      : (ICON_COMMENT + '<span>Komen live</span>');
+
+    card.classList.remove('hide');
+    requestAnimationFrame(()=> card.classList.add('show'));
+    if (data.source === 'gift') spawnSparkles();
+  }
+
+  function processQueue(){
+    if (showing || queue.length === 0) return;
+    showing = true;
+    const item = queue.shift();
+    renderItem(item);
+    setTimeout(() => {
+      card.classList.remove('show');
+      card.classList.add('hide');
+      setTimeout(() => { showing = false; processQueue(); }, 320);
+    }, 5200);
+  }
 
   function connect(){
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -55,17 +180,8 @@
       let data;
       try { data = JSON.parse(ev.data); } catch (e) { return; }
       if (data.type !== 'result') return;
-
-      numEl.textContent = data.lifePath;
-      nickEl.textContent = data.nickname;
-      subEl.textContent = 'Angka Hidup dari ' + data.dob;
-      badgeEl.textContent = data.source === 'gift'
-        ? ('Kirim gift: ' + (data.giftName || ''))
-        : 'Komen';
-
-      clearTimeout(hideTimer);
-      card.classList.add('show');
-      hideTimer = setTimeout(() => card.classList.remove('show'), 8000);
+      queue.push(data);
+      processQueue();
     };
   }
 
