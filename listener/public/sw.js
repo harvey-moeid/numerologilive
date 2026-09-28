@@ -1,4 +1,5 @@
-const CACHE_NAME = 'jn-overlay-v1';
+// Naikkan versi ini kalau daftar SHELL berubah.
+const CACHE_NAME = 'jn-overlay-v2';
 const SHELL = ['./overlay.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -17,6 +18,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first: deploy baru langsung terlihat; cache hanya jadi cadangan saat offline.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -24,12 +26,15 @@ self.addEventListener('fetch', (event) => {
   if (!SHELL.some((p) => url.pathname.endsWith(p.replace('./', '/')))) return;
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      const fetchPromise = fetch(req).then((res) => {
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
-        return res;
-      }).catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(req).then((res) => {
+      if (res && res.ok) {
+        // clone SINKRON sebelum body dipakai halaman
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+      }
+      return res;
+    }).catch(() =>
+      caches.match(req).then((cached) => cached || Response.error())
+    )
   );
 });

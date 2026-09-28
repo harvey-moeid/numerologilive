@@ -78,6 +78,8 @@
   const testSummary = document.getElementById('testSummary');
   let token = localStorage.getItem('adminToken') || '';
   let applyingRemote = false;
+  // Polling/WS hanya jalan setelah token terbukti benar (hindari spam percobaan salah -> 429).
+  let authOk = false;
 
   function headers(){ return { 'Content-Type': 'application/json', 'x-admin-token': token }; }
 
@@ -97,23 +99,33 @@
       : (s.running ? 'AKTIF - listening' : 'OFF'));
   }
 
+  function promptToken(msg){
+    authOk = false;
+    tokenBox.style.display = 'block';
+    toggle.disabled = true;
+    testBtn.disabled = true;
+    statusText.textContent = msg || 'Masukkan admin token';
+  }
+
+  function tooMany(){
+    authOk = false;
+    toggle.disabled = true;
+    testBtn.disabled = true;
+    statusText.textContent = 'Terlalu banyak percobaan token salah. Coba lagi beberapa menit lagi.';
+  }
+
   async function fetchStatus(){
     try {
       const res = await fetch('/api/status', { headers: headers() });
       if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      if (res.status === 429) { tooMany(); return; }
       const data = await res.json();
+      authOk = true;
       tokenBox.style.display = 'none';
       toggle.disabled = false;
       testBtn.disabled = false;
       render(data);
     } catch (e) { statusText.textContent = 'Gagal memuat status'; }
-  }
-
-  function promptToken(msg){
-    tokenBox.style.display = 'block';
-    toggle.disabled = true;
-    testBtn.disabled = true;
-    statusText.textContent = msg || 'Masukkan admin token';
   }
 
   testBtn.addEventListener('click', async () => {
@@ -123,6 +135,7 @@
     try {
       const res = await fetch('/api/test/live', { method: 'POST', headers: headers() });
       if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      if (res.status === 429) { tooMany(); return; }
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Live testing gagal.');
       testSummary.className = 'testSummary ' + (data.pass ? 'pass' : 'fail');
@@ -132,7 +145,7 @@
     } catch (e) {
       testSummary.className = 'testSummary fail';
       testSummary.textContent = 'Live testing gagal: ' + e.message;
-    } finally { testBtn.disabled = false; }
+    } finally { if (authOk) testBtn.disabled = false; }
   });
 
   tokenInput.addEventListener('change', () => {
@@ -148,6 +161,7 @@
     try {
       const res = await fetch(wantOn ? '/api/start' : '/api/stop', { method: 'POST', headers: headers() });
       if (res.status === 401) { promptToken('Token salah, coba lagi.'); return; }
+      if (res.status === 429) { tooMany(); return; }
       const data = await res.json();
       render(data);
     } catch (e) {
@@ -159,15 +173,17 @@
   if (!token) promptToken();
   else fetchStatus();
 
+  // Status lewat WebSocket sengaja minimal (tanpa username/roomId/lastError),
+  // jadi cukup dipakai sebagai pemicu untuk mengambil detail dari /api/status.
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(proto + '://' + location.host);
   ws.onmessage = (ev) => {
     let data;
     try { data = JSON.parse(ev.data); } catch (e) { return; }
-    if (data.type === 'status' && token) render(data);
+    if (data.type === 'status' && token && authOk) fetchStatus();
   };
 
-  setInterval(() => { if (token) fetchStatus(); }, 8000);
+  setInterval(() => { if (token && authOk) fetchStatus(); }, 8000);
 })();
 </script>
 </body>

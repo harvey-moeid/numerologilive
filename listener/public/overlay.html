@@ -5,9 +5,12 @@
 <script>
   // Deteksi ?transparent=1 sebelum render, supaya mode OBS (background transparan)
   // bisa diaktifkan tanpa flicker. Default (tanpa param ini) = background solid untuk web/stream browser biasa.
-  if (new URLSearchParams(location.search).get('transparent') === '1') {
-    document.documentElement.classList.add('transparent');
-  }
+  // ?debug=1 menampilkan teks status koneksi di pojok kiri atas.
+  (function(){
+    const p = new URLSearchParams(location.search);
+    if (p.get('transparent') === '1') document.documentElement.classList.add('transparent');
+    if (p.get('debug') === '1') document.documentElement.classList.add('debug');
+  })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Jalur Numerology - Overlay Live</title>
@@ -35,7 +38,7 @@
   html, body { margin:0; padding:0; overflow:hidden; width:100%; height:100%; }
   * { box-sizing:border-box; font-family:'Inter', 'Segoe UI', Arial, sans-serif; }
 
-  /* Default: background solid premium — dipakai kalau overlay dibuka/di-capture langsung dari browser untuk stream.
+  /* Default: background solid premium - dipakai kalau overlay dibuka/di-capture langsung dari browser untuk stream.
      Tambahkan ?transparent=1 di URL kalau overlay ini dipasang sebagai Browser Source di OBS (perlu background transparan). */
   html, body{
     background:
@@ -226,7 +229,9 @@
     #brand .sub{ display:none; }
   }
 
-  #status{ position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.4; font-family:monospace; z-index:2; }
+  /* Teks status koneksi: disembunyikan di stream, tampil hanya dengan ?debug=1 */
+  #status{ display:none; position:fixed; top:10px; left:10px; font-size:11px; color:#fff; opacity:.4; font-family:monospace; z-index:2; }
+  html.debug #status{ display:block; }
 </style>
 </head>
 <body>
@@ -289,6 +294,14 @@
   const ICON_GIFT = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-2.2c.1-.3.2-.6.2-1a2.5 2.5 0 0 0-4.5-1.5L12 6l-1.5-1.5A2.5 2.5 0 0 0 6 6c0 .4.1.7.2 1H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM8.5 5a.5.5 0 0 1 .5-.5c.4 0 1 .5 1.5 1L9.5 6.5A1 1 0 0 1 8.5 5.5V5zm6 0v.5a1 1 0 0 1-1 1L12.5 5.5c.5-.5 1.1-1 1.5-1a.5.5 0 0 1 .5.5zM6 10h5v9H6v-9zm7 9v-9h5v9h-5z"/></svg>';
   const ICON_LIKE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9C.4 8.7 2 5 5.6 5c2 0 3.4 1.1 4.4 2.4C11 6.1 12.4 5 14.4 5 18 5 19.6 8.7 22 12c-2.5 4.4-10 9-10 9z"/></svg>';
 
+  // Badge: ikon statis (aman) + teks dari server lewat textContent (bukan innerHTML).
+  function setBadge(icon, text){
+    badgeEl.innerHTML = icon;
+    const span = document.createElement('span');
+    span.textContent = text;
+    badgeEl.appendChild(span);
+  }
+
   // Indikator "sedang menghitung" (dari komen berisi tanggal lahir) - tampil singkat, tidak diantrikan
   let calcHideTimer = null;
   function showCalculating(nickname){
@@ -298,7 +311,9 @@
     calcHideTimer = setTimeout(() => calcPill.classList.remove('show'), 4000);
   }
 
-  // Antrian kartu hasil: kalau beberapa gift/like beruntun trigger, tampil bergantian
+  // Antrian kartu hasil: kalau beberapa gift/like beruntun trigger, tampil bergantian.
+  // Dibatasi supaya saat ramai penonton terakhir tidak menunggu terlalu lama (yang terlama dibuang).
+  const MAX_QUEUE = 6;
   const queue = [];
   let showing = false;
 
@@ -327,9 +342,8 @@
     nickEl.title = data.nickname;
     dobEl.textContent = data.dob;
 
-    badgeEl.innerHTML = data.source === 'gift'
-      ? (ICON_GIFT + '<span>Kirim ' + (data.giftName || 'gift') + '</span>')
-      : (ICON_LIKE + '<span>' + (data.likeMilestone || '') + ' like!</span>');
+    if (data.source === 'gift') setBadge(ICON_GIFT, 'Kirim ' + (data.giftName || 'gift'));
+    else setBadge(ICON_LIKE, (data.likeMilestone || '') + ' like!');
 
     card.classList.remove('hide');
     requestAnimationFrame(()=> card.classList.add('show'));
@@ -362,6 +376,7 @@
       if (data.type === 'calculating') { showCalculating(data.nickname); return; }
       if (data.type !== 'result') return;
       queue.push(data);
+      while (queue.length > MAX_QUEUE) queue.shift();
       processQueue();
     };
   }

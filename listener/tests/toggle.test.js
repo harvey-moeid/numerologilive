@@ -10,6 +10,10 @@ const PORT = 39123;
 process.env.TIKTOK_USERNAME = 'tester';
 process.env.ADMIN_TOKEN = 'tok';
 process.env.PORT = String(PORT);
+// Percepat jeda reconnect supaya tes tidak perlu menunggu detik-an.
+process.env.RECONNECT_BASE_MS = '200';
+process.env.RECONNECT_MAX_MS = '2000';
+process.env.ADMIN_MAX_FAILS = '10';
 
 const fake = { instances: [], delay: 100, failNext: false };
 class FakeConn extends EventEmitter {
@@ -85,17 +89,45 @@ test('koneksi putus -> status reconnecting; OFF membatalkan reconnect otomatis',
   const before = fake.instances.length;
   const r = await call('/api/stop', 'POST');
   assert.equal(r.body.reconnecting, false);
-  await sleep(5600);
+  await sleep(800);
   assert.equal(fake.instances.length, before, 'tidak boleh ada reconnect setelah OFF');
   assert.equal((await call('/api/status')).body.running, false);
 });
 
-test('gagal konek: kembali OFF dengan lastError', async () => {
+test('gagal konek (start manual): kembali OFF dengan lastError, tanpa retry otomatis', async () => {
   fake.failNext = true;
   await call('/api/start', 'POST');
   await sleep(250);
+  const before = fake.instances.length;
   const s = (await call('/api/status')).body;
   assert.equal(s.running, false);
   assert.equal(s.connecting, false);
+  assert.equal(s.reconnecting, false);
   assert.match(s.lastError, /sign request/);
+  await sleep(700);
+  assert.equal(fake.instances.length, before, 'start manual yang gagal tidak boleh retry sendiri');
+});
+
+test('reconnect otomatis dicoba lagi (backoff) setelah percobaan reconnect gagal', async () => {
+  await call('/api/start', 'POST');
+  await sleep(250);
+  const conn = fake.instances[fake.instances.length - 1];
+  const before = fake.instances.length;
+  fake.failNext = true; // percobaan reconnect pertama gagal
+  conn.emit('disconnected');
+  // ~200ms tunggu + 100ms gagal + ~400ms backoff + 100ms sukses
+  await sleep(1500);
+  const s = (await call('/api/status')).body;
+  assert.equal(s.running, true, 'harus tersambung lagi setelah retry');
+  assert.ok(fake.instances.length >= before + 2, 'minimal 2 percobaan reconnect');
+});
+
+// HARUS PALING AKHIR: setelah ini IP localhost terkunci 429 sampai jendela waktu habis.
+test('token admin salah berulang -> dibatasi dengan 429', async () => {
+  let got429 = false;
+  for (let i = 0; i < 15 && !got429; i++) {
+    const r = await call('/api/status', 'GET', { 'x-admin-token': 'salah' + i });
+    if (r.status === 429) got429 = true;
+  }
+  assert.ok(got429, 'harus kena 429 setelah beberapa percobaan salah');
 });
