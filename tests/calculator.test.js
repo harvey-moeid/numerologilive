@@ -7,6 +7,7 @@ const {
   calculatePyramid,
   validateDob
 } = require('../calculator.js');
+const listenerCalc = require('../listener/calculator.js');
 
 test('digitSum sums digits of a numeric string', () => {
   assert.equal(digitSum('1990'), 19);
@@ -77,4 +78,49 @@ test('validateDob rejects dates before 1900', () => {
 test('validateDob accepts a valid date', () => {
   const res = validateDob('1990-06-15', '2026-09-26');
   assert.equal(res.valid, true);
+});
+
+test('validateDob rejects calendar dates that do not exist', () => {
+  for (const iso of ['1995-02-30', '1995-02-31', '1995-04-31', '1995-06-31', '1995-02-29', '1900-02-29', '1995-13-01', '1995-00-10', '1995-01-00']) {
+    const res = validateDob(iso, '2026-09-26');
+    assert.equal(res.valid, false, iso + ' seharusnya ditolak');
+    assert.equal(res.reason, 'invalid', iso);
+  }
+});
+
+test('validateDob accepts real edge dates (leap day, month ends)', () => {
+  for (const iso of ['2000-02-29', '1996-02-29', '1995-02-28', '1995-01-31', '1995-04-30', '1900-01-01']) {
+    assert.equal(validateDob(iso, '2026-09-26').valid, true, iso + ' seharusnya valid');
+  }
+});
+
+test('validateDob rejects malformed ISO formats', () => {
+  for (const iso of ['1995-2-3', '95-02-03', '1995/02/03', '1995-02-03T00:00:00', ' 1995-02-03']) {
+    assert.equal(validateDob(iso, '2026-09-26').reason, 'invalid', iso);
+  }
+});
+
+// Parity: listener/calculator.js adalah salinan manual; tes ini mencegah drift.
+test('listener/calculator.js exports the same API as root calculator.js', () => {
+  assert.deepEqual(Object.keys(listenerCalc).sort(), ['calculateLifePath', 'calculatePyramid', 'digitSum', 'reduceNumber', 'validateDob']);
+});
+
+test('listener/calculator.js gives identical results to root calculator.js', () => {
+  const today = '2026-09-26';
+  const pad = (n) => String(n).padStart(2, '0');
+  for (let y = 1900; y <= 2026; y += 3) {
+    for (let m = 1; m <= 12; m++) {
+      for (let d = 1; d <= 31; d++) {
+        const iso = `${y}-${pad(m)}-${pad(d)}`;
+        const a = validateDob(iso, today);
+        assert.deepEqual(listenerCalc.validateDob(iso, today), a, 'validateDob ' + iso);
+        if (!a.valid) continue;
+        assert.equal(listenerCalc.calculateLifePath(d, m, y), calculateLifePath(d, m, y), 'lifePath ' + iso);
+        assert.deepEqual(listenerCalc.calculatePyramid(iso), calculatePyramid(iso), 'pyramid ' + iso);
+      }
+    }
+  }
+  for (const bad of ['', 'not-a-date', '2099-01-01', '1899-12-31']) {
+    assert.deepEqual(listenerCalc.validateDob(bad, today), validateDob(bad, today), bad);
+  }
 });

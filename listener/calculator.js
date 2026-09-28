@@ -1,8 +1,9 @@
 // Salinan logika numerologi murni dari root calculator.js (tanpa DOM),
 // dipakai backend listener supaya tidak bergantung pada environment browser.
+// PENTING: jaga tetap identik dengan root calculator.js (dijaga oleh tests/calculator.test.js).
 function digitSum(str){return str.split('').reduce((a,d)=>a+Number(d),0);}
 function reduceNumber(n,keepMaster){n=Math.abs(n);while(n>9){if(keepMaster&&(n===11||n===22||n===33))return n;n=digitSum(String(n));}return n;}
 function calculateLifePath(day,month,year){const total=digitSum(String(day))+digitSum(String(month))+digitSum(String(year));return reduceNumber(total,true);}
 function calculatePyramid(dobISO){const[y,m,d]=dobISO.split('-');const cells=[d,m,y.slice(0,2),y.slice(2,4)];const row1=cells.map(c=>reduceNumber(digitSum(c),false));const row2=[reduceNumber(row1[0]+row1[1],false),reduceNumber(row1[2]+row1[3],false)];const apex=reduceNumber(row2[0]+row2[1],false);return{cells,row1,row2,apex,jiwa:row2[0],hati:row2[1],karisma:reduceNumber(row1[0]+row1[3],false),tantangan:apex};}
-function validateDob(isoStr,todayISO){if(!isoStr)return{valid:false,reason:'empty'};const dt=new Date(isoStr+'T00:00:00');if(isNaN(dt.getTime()))return{valid:false,reason:'invalid'};if(isoStr>todayISO)return{valid:false,reason:'future'};if(isoStr<'1900-01-01')return{valid:false,reason:'out_of_range'};return{valid:true};}
+function validateDob(isoStr,todayISO){if(!isoStr)return{valid:false,reason:'empty'};const parts=/^(\d{4})-(\d{2})-(\d{2})$/.exec(isoStr);if(!parts)return{valid:false,reason:'invalid'};const y=Number(parts[1]),m=Number(parts[2]),d=Number(parts[3]);const dt=new Date(Date.UTC(y,m-1,d));if(isNaN(dt.getTime())||dt.getUTCFullYear()!==y||dt.getUTCMonth()!==m-1||dt.getUTCDate()!==d)return{valid:false,reason:'invalid'};if(isoStr>todayISO)return{valid:false,reason:'future'};if(isoStr<'1900-01-01')return{valid:false,reason:'out_of_range'};return{valid:true};}
 module.exports={digitSum,reduceNumber,calculateLifePath,calculatePyramid,validateDob};
