@@ -6,6 +6,7 @@
   // Deteksi ?transparent=1 sebelum render, supaya mode OBS (background transparan)
   // bisa diaktifkan tanpa flicker. Default (tanpa param ini) = background solid untuk web/stream browser biasa.
   // ?debug=1 menampilkan teks status koneksi di pojok kiri atas.
+  // ?hint=0 mematikan teks petunjuk saat overlay idle.
   (function(){
     const p = new URLSearchParams(location.search);
     if (p.get('transparent') === '1') document.documentElement.classList.add('transparent');
@@ -135,6 +136,31 @@
   }
   #calcPill .txt b{ color:#fff; font-weight:700; }
 
+  /* ---------- Petunjuk saat idle ---------- */
+  #hint{
+    position:fixed; left:50%; bottom: calc(clamp(30px, 8vh, 68px) * var(--s));
+    transform: translateX(-50%) translateY(8px) scale(var(--s)); transform-origin: bottom center;
+    display:flex; align-items:center; gap:10px;
+    padding: clamp(9px, 1.6vh, 12px) clamp(15px, 3.4vw, 22px); border-radius:999px;
+    background: rgba(18,11,36,.62);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(255,255,255,.16);
+    box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    max-width: calc(94vw / var(--s));
+    opacity:0; transition: opacity .4s ease, transform .4s ease;
+    pointer-events:none; z-index:1;
+  }
+  #hint.show{ opacity:1; transform: translateX(-50%) translateY(0) scale(var(--s)); }
+  #hint .hdot{
+    width:8px; height:8px; border-radius:50%; flex:none;
+    background: linear-gradient(160deg, var(--gold-1), var(--violet-1));
+    box-shadow: 0 0 10px var(--gold-1);
+    animation: dotpulse 2.4s ease-out infinite;
+  }
+  #hint .htxt{ font-size: clamp(12px, 2.8vw, 14px); color:rgba(255,255,255,.88); text-align:center; line-height:1.35; }
+  #hint .htxt b{ color: var(--gold-1); font-weight:700; }
+
   /* ---------- Kartu hasil ---------- */
   #stage {
     position:fixed; left:50%; bottom: calc(clamp(30px, 8vh, 68px) * var(--s));
@@ -199,6 +225,19 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .info .sub{ font-size: clamp(11.5px, 2.7vw, 13.5px); color:rgba(255,255,255,.7); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Arti singkat: judul + kata kunci */
+  .info .trait{ margin-top: clamp(6px, 1.4vh, 9px); min-width:0; }
+  .info .trait .tt{
+    font-family:'Sora', sans-serif; font-weight:700; font-size: clamp(12.5px, 3vw, 15px); color: var(--gold-1);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #card.like .trait .tt{ color: var(--pink-1); }
+  .info .trait .kw{
+    font-size: clamp(10.5px, 2.5vw, 12.5px); color:rgba(255,255,255,.74); margin-top:2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
   .info .label{
     font-size: clamp(10px, 2.2vw, 11.5px); font-weight:600; letter-spacing:.05em; text-transform:uppercase;
     margin-top: clamp(7px, 1.7vh, 10px); display:inline-flex; align-items:center; gap:6px;
@@ -254,6 +293,11 @@
     <span class="txt">Menghitung untuk <b id="calcName">-</b>...</span>
   </div>
 
+  <div id="hint">
+    <span class="hdot"></span>
+    <span class="htxt" id="hintText"></span>
+  </div>
+
   <div id="stage">
     <div id="card">
       <div class="row">
@@ -264,6 +308,10 @@
         <div class="info">
           <div class="nick" id="nick">-</div>
           <div class="sub">Angka Hidup dari <span id="dob">-</span></div>
+          <div class="trait" id="trait">
+            <div class="tt" id="traitTitle"></div>
+            <div class="kw" id="traitKw"></div>
+          </div>
           <div class="label" id="badge"></div>
         </div>
       </div>
@@ -278,8 +326,13 @@
   const nickEl = document.getElementById('nick');
   const dobEl = document.getElementById('dob');
   const badgeEl = document.getElementById('badge');
+  const traitEl = document.getElementById('trait');
+  const traitTitleEl = document.getElementById('traitTitle');
+  const traitKwEl = document.getElementById('traitKw');
   const calcPill = document.getElementById('calcPill');
   const calcName = document.getElementById('calcName');
+  const hintEl = document.getElementById('hint');
+  const hintText = document.getElementById('hintText');
 
   // Skala UI otomatis: sisi terpendek kanvas / 720 (min 1, max 3). Override manual: ?scale=1.25
   function applyScale(){
@@ -317,6 +370,37 @@
   const queue = [];
   let showing = false;
 
+  // ---------- Petunjuk saat idle (matikan dengan ?hint=0) ----------
+  const HINT_ENABLED = new URLSearchParams(location.search).get('hint') !== '0';
+  let likeThreshold = 0;
+  let giftMin = 1;
+  let hintIdx = 0;
+
+  function hintMessages(){
+    const giftPart = giftMin > 1 ? 'kirim <b>gift</b> (min. ' + giftMin + ' koin)' : 'kirim <b>gift</b>';
+    const likePart = likeThreshold > 0 ? ' atau tap <b>like</b> sampai ' + likeThreshold + '\u00d7' : '';
+    return [
+      'Tulis <b>tanggal lahirmu</b> di komen, contoh <b>25/01/1994</b>',
+      'Lalu ' + giftPart + likePart + ' untuk lihat Angka Hidupmu'
+    ];
+  }
+  function setHintText(){
+    const m = hintMessages();
+    hintText.innerHTML = m[hintIdx % m.length]; // hanya string statis + angka yang sudah divalidasi
+  }
+  function refreshHint(){
+    const idle = !showing && queue.length === 0;
+    hintEl.classList.toggle('show', HINT_ENABLED && idle);
+  }
+  function rotateHint(){
+    if (!HINT_ENABLED) return;
+    hintEl.classList.remove('show');
+    setTimeout(() => { hintIdx++; setHintText(); refreshHint(); }, 450);
+  }
+  setHintText();
+  refreshHint();
+  setInterval(rotateHint, 7000);
+
   function spawnSparkles(){
     for (let i=0;i<10;i++){
       const s = document.createElement('div');
@@ -342,6 +426,15 @@
     nickEl.title = data.nickname;
     dobEl.textContent = data.dob;
 
+    // Arti singkat (textContent, bukan innerHTML)
+    if (data.title) {
+      traitEl.style.display = '';
+      traitTitleEl.textContent = data.title + (data.master ? ' \u00b7 Master' : '');
+      traitKwEl.textContent = Array.isArray(data.keywords) ? data.keywords.slice(0, 3).join(' \u00b7 ') : '';
+    } else {
+      traitEl.style.display = 'none';
+    }
+
     if (data.source === 'gift') setBadge(ICON_GIFT, 'Kirim ' + (data.giftName || 'gift'));
     else setBadge(ICON_LIKE, (data.likeMilestone || '') + ' like!');
 
@@ -353,12 +446,13 @@
   function processQueue(){
     if (showing || queue.length === 0) return;
     showing = true;
+    refreshHint();
     const item = queue.shift();
     renderItem(item);
     setTimeout(() => {
       card.classList.remove('show');
       card.classList.add('hide');
-      setTimeout(() => { showing = false; processQueue(); }, 320);
+      setTimeout(() => { showing = false; processQueue(); refreshHint(); }, 320);
     }, 5200);
   }
 
@@ -373,11 +467,21 @@
     ws.onmessage = (ev) => {
       let data;
       try { data = JSON.parse(ev.data); } catch (e) { return; }
+      if (data.type === 'config') {
+        const lt = Number(data.likeThreshold);
+        likeThreshold = (Number.isFinite(lt) && lt > 0) ? Math.floor(lt) : 0;
+        const gm = Number(data.giftMinCoins);
+        giftMin = (Number.isFinite(gm) && gm > 1) ? Math.floor(gm) : 1;
+        setHintText();
+        return;
+      }
+      if (data.type === 'clear-queue') { queue.length = 0; refreshHint(); return; }
       if (data.type === 'calculating') { showCalculating(data.nickname); return; }
       if (data.type !== 'result') return;
       queue.push(data);
       while (queue.length > MAX_QUEUE) queue.shift();
       processQueue();
+      refreshHint();
     };
   }
 

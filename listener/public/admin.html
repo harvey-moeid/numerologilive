@@ -7,7 +7,7 @@
   * { box-sizing: border-box; }
   body {
     margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background:#0f0a1f; font-family:'Segoe UI', Arial, sans-serif; color:#fff;
+    background:#0f0a1f; font-family:'Segoe UI', Arial, sans-serif; color:#fff; padding:16px 0;
   }
   .card {
     width: 380px; max-width: 92vw; background:#1c1436; border-radius:20px; padding:28px;
@@ -42,6 +42,26 @@
   .tokenBox { margin-top:18px; }
   .tokenBox input { width:100%; padding:8px 10px; border-radius:8px; border:1px solid #3a3160; background:#150f2b; color:#fff; font-size:13px; }
   .tokenBox label { font-size:12px; color:#b6acd6; }
+
+  /* Kontrol overlay + riwayat */
+  .ctlBox { margin-top:18px; padding-top:18px; border-top:1px solid #332957; }
+  .ctlTitle { font-size:12px; font-weight:700; color:#b6acd6; text-transform:uppercase; letter-spacing:.06em; margin:0 0 10px; }
+  .ctlGrid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .ctlBtn { border:0; border-radius:10px; padding:10px 6px; background:#2b2150; color:#fff; font-weight:600; font-size:12px; cursor:pointer; }
+  .ctlBtn.wide { grid-column:1 / -1; background:#3a1f4f; }
+  .ctlBtn:disabled { opacity:.55; cursor:not-allowed; }
+  .ctlMsg { margin-top:8px; font-size:12px; color:#b6acd6; min-height:16px; }
+  .hist { max-height:230px; overflow:auto; margin-top:8px; }
+  .histRow { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #2a2148; }
+  .hNum { width:34px; height:34px; border-radius:10px; flex:none; display:flex; align-items:center; justify-content:center; font-weight:800; background:linear-gradient(160deg,#8b5cf6,#4c1d95); }
+  .hNum.gift { background:linear-gradient(160deg,#f5c563,#b5651d); }
+  .hNum.like { background:linear-gradient(160deg,#fb7185,#9d174d); }
+  .hInfo { min-width:0; flex:1; }
+  .hNick { font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hMeta { font-size:11.5px; color:#b6acd6; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hBtn { border:0; border-radius:8px; padding:6px 9px; background:#2b2150; color:#fff; font-size:11.5px; cursor:pointer; flex:none; }
+  .hBtn:disabled { opacity:.55; cursor:not-allowed; }
+  .histEmpty { font-size:12px; color:#b6acd6; padding:6px 0; }
 </style>
 </head>
 <body>
@@ -55,6 +75,23 @@
     </div>
     <div class="meta">Akun TikTok: <b id="username">-</b><br>Room ID: <b id="roomId">-</b></div>
     <div class="err" id="err"></div>
+
+    <div class="ctlBox">
+      <p class="ctlTitle">Uji &amp; kontrol overlay</p>
+      <div class="ctlGrid">
+        <button class="ctlBtn" type="button" data-card="gift" disabled>Kartu Gift</button>
+        <button class="ctlBtn" type="button" data-card="like" disabled>Kartu Like</button>
+        <button class="ctlBtn" type="button" data-card="calculating" disabled>Menghitung</button>
+        <button class="ctlBtn wide" type="button" id="clearQueueBtn" disabled>Kosongkan antrian overlay</button>
+      </div>
+      <div class="ctlMsg" id="ctlMsg">Kartu contoh hanya tampil di overlay, tidak tercatat di riwayat.</div>
+    </div>
+
+    <div class="ctlBox">
+      <p class="ctlTitle">Riwayat hasil (20 terakhir)</p>
+      <div class="hist" id="hist"><div class="histEmpty">Belum ada hasil.</div></div>
+    </div>
+
     <div class="testBox">
       <button class="testBtn" id="testBtn" type="button" disabled>Jalankan Live Testing</button>
       <div class="testSummary" id="testSummary">Tes sintetis tanpa mengubah koneksi TikTok.</div>
@@ -76,12 +113,22 @@
   const tokenInput = document.getElementById('tokenInput');
   const testBtn = document.getElementById('testBtn');
   const testSummary = document.getElementById('testSummary');
+  const histEl = document.getElementById('hist');
+  const ctlMsg = document.getElementById('ctlMsg');
+  const clearQueueBtn = document.getElementById('clearQueueBtn');
+  const cardBtns = Array.prototype.slice.call(document.querySelectorAll('[data-card]'));
   let token = localStorage.getItem('adminToken') || '';
   let applyingRemote = false;
   // Polling/WS hanya jalan setelah token terbukti benar (hindari spam percobaan salah -> 429).
   let authOk = false;
 
   function headers(){ return { 'Content-Type': 'application/json', 'x-admin-token': token }; }
+
+  function setCtlDisabled(disabled){
+    cardBtns.forEach(b => { b.disabled = disabled; });
+    clearQueueBtn.disabled = disabled;
+    Array.prototype.forEach.call(histEl.querySelectorAll('.hBtn'), b => { b.disabled = disabled; });
+  }
 
   function render(s){
     usernameEl.textContent = s.username || '-';
@@ -104,6 +151,7 @@
     tokenBox.style.display = 'block';
     toggle.disabled = true;
     testBtn.disabled = true;
+    setCtlDisabled(true);
     statusText.textContent = msg || 'Masukkan admin token';
   }
 
@@ -111,7 +159,81 @@
     authOk = false;
     toggle.disabled = true;
     testBtn.disabled = true;
+    setCtlDisabled(true);
     statusText.textContent = 'Terlalu banyak percobaan token salah. Coba lagi beberapa menit lagi.';
+  }
+
+  // Panggilan API untuk kontrol overlay. Mengembalikan Response, atau null bila auth gagal.
+  async function api(path, method){
+    const res = await fetch(path, { method: method || 'GET', headers: headers() });
+    if (res.status === 401) { promptToken('Token salah, coba lagi.'); return null; }
+    if (res.status === 429) { tooMany(); return null; }
+    return res;
+  }
+
+  function sourceLabel(it){
+    if (it.source === 'gift') return 'Gift' + (it.giftName ? ' ' + it.giftName : '');
+    if (it.source === 'like') return (it.likeMilestone || '') + ' like';
+    return '';
+  }
+
+  function renderHistory(items){
+    histEl.textContent = '';
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'histEmpty';
+      empty.textContent = 'Belum ada hasil.';
+      histEl.appendChild(empty);
+      return;
+    }
+    items.forEach(it => {
+      const row = document.createElement('div');
+      row.className = 'histRow';
+
+      const num = document.createElement('div');
+      num.className = 'hNum ' + (it.source === 'gift' ? 'gift' : (it.source === 'like' ? 'like' : ''));
+      num.textContent = it.lifePath;
+
+      const info = document.createElement('div');
+      info.className = 'hInfo';
+      const nick = document.createElement('div');
+      nick.className = 'hNick';
+      nick.textContent = it.nickname; // nickname dari penonton: selalu textContent
+      const meta = document.createElement('div');
+      meta.className = 'hMeta';
+      const t = new Date(it.ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      meta.textContent = t + ' \u00b7 ' + sourceLabel(it);
+      info.appendChild(nick);
+      info.appendChild(meta);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'hBtn';
+      btn.textContent = 'Tayang ulang';
+      btn.disabled = !authOk;
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          const res = await api('/api/replay?id=' + encodeURIComponent(it.id), 'POST');
+          if (res) ctlMsg.textContent = res.ok ? ('Ditayangkan ulang: ' + it.nickname) : 'Item sudah tidak tersedia.';
+        } catch (e) { ctlMsg.textContent = 'Gagal menghubungi server.'; }
+        finally { btn.disabled = !authOk; }
+      });
+
+      row.appendChild(num);
+      row.appendChild(info);
+      row.appendChild(btn);
+      histEl.appendChild(row);
+    });
+  }
+
+  async function fetchHistory(){
+    try {
+      const res = await api('/api/history');
+      if (!res || !res.ok) return;
+      const data = await res.json();
+      renderHistory(Array.isArray(data.items) ? data.items : []);
+    } catch (e) { /* abaikan; akan dicoba lagi saat polling berikutnya */ }
   }
 
   async function fetchStatus(){
@@ -124,9 +246,31 @@
       tokenBox.style.display = 'none';
       toggle.disabled = false;
       testBtn.disabled = false;
+      setCtlDisabled(false);
       render(data);
+      fetchHistory();
     } catch (e) { statusText.textContent = 'Gagal memuat status'; }
   }
+
+  cardBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      try {
+        const res = await api('/api/test/card?kind=' + encodeURIComponent(btn.getAttribute('data-card')), 'POST');
+        if (res) ctlMsg.textContent = res.ok ? 'Kartu contoh dikirim ke overlay.' : 'Gagal mengirim kartu contoh.';
+      } catch (e) { ctlMsg.textContent = 'Gagal menghubungi server.'; }
+      finally { btn.disabled = !authOk; }
+    });
+  });
+
+  clearQueueBtn.addEventListener('click', async () => {
+    clearQueueBtn.disabled = true;
+    try {
+      const res = await api('/api/queue/clear', 'POST');
+      if (res) ctlMsg.textContent = res.ok ? 'Antrian overlay dikosongkan (kartu yang sedang tampil tetap selesai).' : 'Gagal mengosongkan antrian.';
+    } catch (e) { ctlMsg.textContent = 'Gagal menghubungi server.'; }
+    finally { clearQueueBtn.disabled = !authOk; }
+  });
 
   testBtn.addEventListener('click', async () => {
     testBtn.disabled = true;
@@ -139,7 +283,6 @@
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Live testing gagal.');
       testSummary.className = 'testSummary ' + (data.pass ? 'pass' : 'fail');
-      const icon = data.pass ? 'PASS' : 'FAIL';
       const details = (data.results || []).map(r => (r.pass ? 'PASS' : 'FAIL') + ' - ' + r.name + ': ' + r.detail).join('<br>');
       testSummary.innerHTML = '<b>' + (data.pass ? 'LULUS' : 'GAGAL') + '</b> - ' + data.passed + '/' + data.total + ' tes<br><small>' + details + '</small>';
     } catch (e) {
@@ -164,6 +307,7 @@
       if (res.status === 429) { tooMany(); return; }
       const data = await res.json();
       render(data);
+      fetchHistory(); // OFF membersihkan riwayat di server
     } catch (e) {
       errEl.textContent = 'Gagal menghubungi server.';
       toggle.disabled = false;
@@ -174,13 +318,16 @@
   else fetchStatus();
 
   // Status lewat WebSocket sengaja minimal (tanpa username/roomId/lastError),
-  // jadi cukup dipakai sebagai pemicu untuk mengambil detail dari /api/status.
+  // jadi dipakai sebagai pemicu untuk mengambil detail dari /api/status.
+  // Hasil baru (result) memicu penyegaran riwayat.
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const ws = new WebSocket(proto + '://' + location.host);
   ws.onmessage = (ev) => {
     let data;
     try { data = JSON.parse(ev.data); } catch (e) { return; }
-    if (data.type === 'status' && token && authOk) fetchStatus();
+    if (!token || !authOk) return;
+    if (data.type === 'status') fetchStatus();
+    else if (data.type === 'result' && !data.sample && !data.replay) fetchHistory();
   };
 
   setInterval(() => { if (token && authOk) fetchStatus(); }, 8000);

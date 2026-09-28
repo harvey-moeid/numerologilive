@@ -7,6 +7,8 @@ const http = require('http');
 const WebSocket = require('ws');
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { calculateLifePath, calculatePyramid, validateDob } = require('./calculator');
+const { extractDob: parseDob } = require('./dob-parser');
+const { getTraits } = require('./traits');
 
 const TIKTOK_USERNAME = process.env.TIKTOK_USERNAME;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
@@ -24,6 +26,7 @@ const RECONNECT_MAX_MS = parseInt(process.env.RECONNECT_MAX_MS || '60000', 10);
 const DOB_TTL_MS = parseInt(process.env.DOB_TTL_MS || String(6 * 60 * 60 * 1000), 10);
 const CACHE_MAX_ENTRIES = 20000;
 const CALC_COOLDOWN_MS = 3000;
+const HISTORY_MAX = 20;
 
 // Pembatasan percobaan token admin yang salah (per IP).
 const ADMIN_MAX_FAILS = parseInt(process.env.ADMIN_MAX_FAILS || '10', 10);
@@ -98,6 +101,8 @@ function getStatus() {
 const dobCache = new Map();
 const likeCrossed = new Map();
 const lastCalc = new Map();
+const history = []; // hasil terbaru di depan; berisi DOB, jadi TIDAK pernah dikirim utuh lewat API riwayat
+let historySeq = 0;
 
 function trimMap(map, max) {
   while (map.size > max) {
@@ -109,6 +114,7 @@ function clearViewerData() {
   dobCache.clear();
   likeCrossed.clear();
   lastCalc.clear();
+  history.length = 0;
 }
 
 function rememberDob(uniqueId, dob) {
@@ -127,37 +133,40 @@ function getDob(uniqueId) {
   return entry;
 }
 
-const DATE_REGEX = /\b(\d{1,2})[\/\-. ](\d{1,2})[\/\-. ](\d{4})\b/;
-
+// Parser mendukung 25/01/1994, 25 Januari 1994, 25 jan 94, 25011994, dll (lihat dob-parser.js).
 function extractDob(text) {
-  if (!text) return null;
-  const match = text.match(DATE_REGEX);
-  if (!match) return null;
-  const d = parseInt(match[1], 10);
-  const m = parseInt(match[2], 10);
-  const y = parseInt(match[3], 10);
-  const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   const todayISO = new Date().toISOString().slice(0, 10);
-  const check = validateDob(iso, todayISO);
-  if (!check.valid) return null;
-  return { iso, d, m, y };
+  return parseDob(text, (iso) => validateDob(iso, todayISO));
 }
 
 function buildResult(nickname, uniqueId, dob, meta) {
   const lifePath = calculateLifePath(dob.d, dob.m, dob.y);
   const pyramid = calculatePyramid(dob.iso);
+  const traits = getTraits(lifePath);
   return {
     type: 'result',
     nickname,
     uniqueId,
     dob: dob.iso,
     lifePath,
+    title: traits ? traits.title : null,
+    keywords: traits ? traits.keywords : [],
+    master: !!(traits && traits.master),
     pyramid,
     source: meta.source,
     giftName: meta.giftName || null,
     likeMilestone: meta.likeMilestone || null,
     timestamp: Date.now(),
   };
+}
+
+// Catat ke riwayat (untuk panel admin) lalu kirim ke overlay.
+function emitResult(result) {
+  const entry = Object.assign({ id: ++historySeq }, result);
+  history.unshift(entry);
+  if (history.length > HISTORY_MAX) history.length = HISTORY_MAX;
+  broadcast(entry);
+  return entry;
 }
 
 function handleChat(data) {
@@ -196,11 +205,10 @@ function handleGift(data) {
     console.log(`[gift] ${data.nickname} (@${data.uniqueId}) kirim gift tapi belum pernah kirim tanggal lahir di komen, dilewati.`);
     return;
   }
-  const result = buildResult(data.nickname, data.uniqueId, cached, {
+  const result = emitResult(buildResult(data.nickname, data.uniqueId, cached, {
     source: 'gift',
     giftName: data.giftName,
-  });
-  broadcast(result);
+  }));
   console.log(`[gift:${data.giftName} (${coins} koin)] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
@@ -223,11 +231,10 @@ function handleLike(data) {
     console.log(`[like] ${data.nickname} (@${data.uniqueId}) capai ${milestone} like tapi belum pernah kirim tanggal lahir di komen, dilewati.`);
     return;
   }
-  const result = buildResult(data.nickname, data.uniqueId, cached, {
+  const result = emitResult(buildResult(data.nickname, data.uniqueId, cached, {
     source: 'like',
     likeMilestone: milestone,
-  });
-  broadcast(result);
+  }));
   console.log(`[like:${milestone}] ${data.nickname} (@${data.uniqueId}) -> DOB ${cached.iso} -> Angka Hidup ${result.lifePath}`);
 }
 
@@ -313,7 +320,7 @@ function stopListener() {
     try { connection.disconnect(); } catch (_) { /* abaikan error saat disconnect */ }
     connection = null;
   }
-  // Sesuai README: data penonton hanya ada selama listener aktif.
+  // Sesuai README: data penonton (termasuk riwayat) hanya ada selama listener aktif.
   clearViewerData();
   if (wasActive) console.log('Listener DIMATIKAN dari panel admin.');
   broadcastStatus();
@@ -353,6 +360,54 @@ function checkAdminToken(req, res, next) {
 app.get('/api/status', checkAdminToken, (req, res) => res.json(getStatus()));
 app.post('/api/start', checkAdminToken, (req, res) => { startListener(); res.json(getStatus()); });
 app.post('/api/stop', checkAdminToken, (req, res) => { stopListener(); res.json(getStatus()); });
+
+// ---------- Kontrol overlay dari panel admin ----------
+// Riwayat TIDAK memuat tanggal lahir; tanggal lahir hanya dipakai internal untuk tayang ulang.
+app.get('/api/history', checkAdminToken, (req, res) => {
+  res.json({
+    items: history.map((h) => ({
+      id: h.id,
+      ts: h.timestamp,
+      nickname: h.nickname,
+      uniqueId: h.uniqueId,
+      lifePath: h.lifePath,
+      source: h.source,
+      giftName: h.giftName,
+      likeMilestone: h.likeMilestone,
+    })),
+  });
+});
+
+app.post('/api/replay', checkAdminToken, (req, res) => {
+  const id = parseInt(req.query.id, 10);
+  const item = history.find((h) => h.id === id);
+  if (!item) return res.status(404).json({ error: 'Item riwayat tidak ditemukan (mungkin sudah dibersihkan).' });
+  broadcast(Object.assign({}, item, { timestamp: Date.now(), replay: true }));
+  res.json({ ok: true });
+});
+
+app.post('/api/queue/clear', checkAdminToken, (req, res) => {
+  broadcast({ type: 'clear-queue', timestamp: Date.now() });
+  res.json({ ok: true });
+});
+
+// Kartu contoh untuk mengecek tampilan/skala overlay di OBS tanpa menunggu gift asli.
+app.post('/api/test/card', checkAdminToken, (req, res) => {
+  const kind = String(req.query.kind || '');
+  if (kind === 'calculating') {
+    broadcast({ type: 'calculating', nickname: 'Penonton Contoh', uniqueId: 'contoh', timestamp: Date.now(), sample: true });
+    return res.json({ ok: true });
+  }
+  if (kind === 'gift' || kind === 'like') {
+    const sampleDob = { iso: '1994-01-25', d: 25, m: 1, y: 1994 };
+    const meta = kind === 'gift'
+      ? { source: 'gift', giftName: 'Rose' }
+      : { source: 'like', likeMilestone: LIKE_THRESHOLD };
+    broadcast(Object.assign(buildResult('Penonton Contoh', 'contoh', sampleDob, meta), { sample: true }));
+    return res.json({ ok: true });
+  }
+  res.status(400).json({ error: 'kind harus gift, like, atau calculating.' });
+});
 
 function runLiveTests() {
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -424,6 +479,12 @@ wss.on('connection', (ws) => {
     running: state.running,
     connecting: state.connecting,
     reconnecting: state.reconnecting,
+  }));
+  // Konfigurasi non-sensitif untuk teks petunjuk di overlay.
+  ws.send(JSON.stringify({
+    type: 'config',
+    giftMinCoins: GIFT_MIN_COINS,
+    likeThreshold: LIKE_THRESHOLD,
   }));
 });
 

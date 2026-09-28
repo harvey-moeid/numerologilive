@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('path');
 const Module = require('module');
 const EventEmitter = require('events');
+const WebSocket = require('ws');
 
 const PORT = 39123;
 process.env.TIKTOK_USERNAME = 'tester';
@@ -120,6 +121,57 @@ test('reconnect otomatis dicoba lagi (backoff) setelah percobaan reconnect gagal
   const s = (await call('/api/status')).body;
   assert.equal(s.running, true, 'harus tersambung lagi setelah retry');
   assert.ok(fake.instances.length >= before + 2, 'minimal 2 percobaan reconnect');
+});
+
+test('gift setelah komen tanggal lahir: hasil berisi arti singkat, masuk riwayat, bisa tayang ulang, dibersihkan saat OFF', async () => {
+  await call('/api/start', 'POST');
+  await sleep(250);
+  const conn = fake.instances[fake.instances.length - 1];
+
+  const msgs = [];
+  const ws = new WebSocket(`ws://localhost:${PORT}`);
+  ws.on('message', (m) => { try { msgs.push(JSON.parse(m.toString())); } catch (_) { /* abaikan */ } });
+  await new Promise((res, rej) => { ws.on('open', res); ws.on('error', rej); });
+  await sleep(50);
+  assert.ok(msgs.find((m) => m.type === 'config'), 'klien baru menerima config (untuk teks petunjuk)');
+
+  // Kartu contoh dari panel admin: tayang di overlay tapi tidak masuk riwayat
+  assert.equal((await call('/api/test/card?kind=gift', 'POST')).status, 200);
+  assert.equal((await call('/api/test/card?kind=ngawur', 'POST')).status, 400);
+  await sleep(80);
+  assert.ok(msgs.find((m) => m.type === 'result' && m.sample), 'kartu contoh terkirim');
+  assert.equal((await call('/api/history')).body.items.length, 0, 'kartu contoh tidak tercatat');
+
+  // Alur asli: komen (format nama bulan) lalu gift
+  conn.emit('chat', { uniqueId: 'u1', nickname: 'Budi', comment: 'lahir 25 Januari 1994 kak' });
+  conn.emit('gift', { uniqueId: 'u1', nickname: 'Budi', giftType: 0, diamondCount: 5, giftName: 'Rose' });
+  await sleep(100);
+
+  assert.ok(msgs.find((m) => m.type === 'calculating'), 'indikator menghitung terkirim');
+  const result = msgs.find((m) => m.type === 'result' && !m.sample);
+  assert.ok(result, 'hasil asli terkirim');
+  assert.equal(result.lifePath, 4);
+  assert.equal(result.title, 'Sang Pembangun');
+  assert.ok(Array.isArray(result.keywords) && result.keywords.length >= 1);
+
+  const h = (await call('/api/history')).body;
+  assert.equal(h.items.length, 1);
+  assert.equal(h.items[0].nickname, 'Budi');
+  assert.equal(h.items[0].dob, undefined, 'riwayat tidak boleh membocorkan tanggal lahir');
+
+  const before = msgs.filter((m) => m.type === 'result' && !m.sample).length;
+  assert.equal((await call(`/api/replay?id=${h.items[0].id}`, 'POST')).status, 200);
+  await sleep(80);
+  assert.equal(msgs.filter((m) => m.type === 'result' && !m.sample).length, before + 1, 'tayang ulang mengirim hasil lagi');
+  assert.equal((await call('/api/replay?id=99999', 'POST')).status, 404);
+
+  assert.equal((await call('/api/queue/clear', 'POST')).status, 200);
+  await sleep(80);
+  assert.ok(msgs.find((m) => m.type === 'clear-queue'), 'perintah kosongkan antrian terkirim');
+
+  await call('/api/stop', 'POST');
+  assert.equal((await call('/api/history')).body.items.length, 0, 'riwayat dibersihkan saat OFF');
+  ws.close();
 });
 
 // HARUS PALING AKHIR: setelah ini IP localhost terkunci 429 sampai jendela waktu habis.
