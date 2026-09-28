@@ -86,11 +86,15 @@
     roomIdEl.textContent = s.roomId || '-';
     errEl.textContent = s.lastError ? ('Error terakhir: ' + s.lastError) : '';
     applyingRemote = true;
-    toggle.checked = !!s.running;
+    // ON = aktif, sedang menghubungkan, atau menunggu reconnect otomatis.
+    // Toggle tetap bisa dipakai di kondisi itu: geser ke OFF = batalkan.
+    toggle.checked = !!(s.running || s.connecting || s.reconnecting);
     applyingRemote = false;
-    toggle.disabled = !!s.connecting;
-    dot.className = 'status-dot' + (s.running ? ' on' : (s.connecting ? ' connecting' : ''));
-    statusText.textContent = s.connecting ? 'Menghubungkan...' : (s.running ? 'AKTIF - listening' : 'OFF');
+    toggle.disabled = false;
+    dot.className = 'status-dot' + (s.running ? ' on' : ((s.connecting || s.reconnecting) ? ' connecting' : ''));
+    statusText.textContent = s.connecting ? 'Menghubungkan... (geser OFF untuk batal)'
+      : (s.reconnecting ? 'Terputus, menyambung ulang... (geser OFF untuk batal)'
+      : (s.running ? 'AKTIF - listening' : 'OFF'));
   }
 
   async function fetchStatus(){

@@ -4,7 +4,8 @@
   "description": "Listener TikTok Live yang menghitung numerologi (Angka Hidup) dari tanggal lahir yang ditulis penonton di komen, ditampilkan sebagai overlay browser untuk OBS.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/toggle.test.js"
   },
   "engines": {
     "node": ">=18"

@@ -43,18 +43,23 @@ function broadcast(data) {
 const state = {
   running: false,
   connecting: false,
+  reconnecting: false,
   roomId: null,
   username: TIKTOK_USERNAME,
   lastError: null,
 };
 let connection = null;
 let reconnectTimer = null;
+// Penanda percobaan koneksi. Setiap start/stop menaikkan nilainya, sehingga hasil
+// (then/catch/disconnected) dari percobaan lama yang sudah dibatalkan diabaikan.
+let attemptId = 0;
 
 function broadcastStatus() {
   broadcast({
     type: 'status',
     running: state.running,
     connecting: state.connecting,
+    reconnecting: state.reconnecting,
     roomId: state.roomId,
     username: state.username,
     lastError: state.lastError,
@@ -65,6 +70,7 @@ function getStatus() {
   return {
     running: state.running,
     connecting: state.connecting,
+    reconnecting: state.reconnecting,
     roomId: state.roomId,
     username: state.username,
     lastError: state.lastError,
@@ -167,26 +173,36 @@ function handleLike(data) {
 
 function startListener() {
   if (state.running || state.connecting) return;
+  clearTimeout(reconnectTimer);
   state.connecting = true;
+  state.reconnecting = false;
   state.lastError = null;
   broadcastStatus();
 
+  const id = ++attemptId;
   const connectionOptions = SIGN_API_KEY ? { signApiKey: SIGN_API_KEY } : {};
-  connection = new WebcastPushConnection(state.username, connectionOptions);
-  connection.on('chat', handleChat);
-  connection.on('gift', handleGift);
-  connection.on('like', handleLike);
-  connection.on('disconnected', () => {
-    if (!state.running) return;
+  const conn = new WebcastPushConnection(state.username, connectionOptions);
+  connection = conn;
+  conn.on('chat', handleChat);
+  conn.on('gift', handleGift);
+  conn.on('like', handleLike);
+  conn.on('disconnected', () => {
+    if (id !== attemptId || !state.running) return;
     console.warn('Koneksi TikTok Live terputus, mencoba reconnect dalam 5 detik...');
     state.running = false;
+    state.reconnecting = true;
     state.roomId = null;
     broadcastStatus();
     reconnectTimer = setTimeout(startListener, 5000);
   });
 
-  connection.connect()
+  conn.connect()
     .then((info) => {
+      if (id !== attemptId) {
+        // Dibatalkan (stop) saat masih connecting: tutup koneksi yatim ini.
+        try { conn.disconnect(); } catch (_) { /* abaikan */ }
+        return;
+      }
       state.running = true;
       state.connecting = false;
       state.roomId = info.roomId;
@@ -194,6 +210,7 @@ function startListener() {
       broadcastStatus();
     })
     .catch((err) => {
+      if (id !== attemptId) return;
       state.connecting = false;
       state.running = false;
       state.lastError = err.message || String(err);
@@ -207,15 +224,17 @@ function startListener() {
 
 function stopListener() {
   clearTimeout(reconnectTimer);
-  const wasRunning = state.running || state.connecting;
+  attemptId++; // batalkan percobaan koneksi yang mungkin masih berjalan
+  const wasActive = state.running || state.connecting || state.reconnecting;
   state.running = false;
   state.connecting = false;
+  state.reconnecting = false;
   state.roomId = null;
   if (connection) {
     try { connection.disconnect(); } catch (_) { /* abaikan error saat disconnect */ }
     connection = null;
   }
-  if (wasRunning) console.log('Listener DIMATIKAN dari panel admin.');
+  if (wasActive) console.log('Listener DIMATIKAN dari panel admin.');
   broadcastStatus();
 }
 
