@@ -4,7 +4,7 @@ import { normalizeSettings } from "../../../overlay-settings.mjs";
 export async function onRequest({request,env}) {
   if (!["GET","PUT"].includes(request.method)) return json({ok:false,error:"Metode tidak diizinkan"},405);
   const status=authorized(request,env);
-  if (status==="unconfigured") return json({ok:false,error:"NUMEROLOGY_ADMIN_TOKEN belum diatur (minimal 32 karakter)"},503);
+  if (status==="unconfigured") return json({ok:false,error:"NUMEROLOGY_ADMIN_TOKEN belum diatur (minimal 2 karakter)"},503);
   if (!status) return json({ok:false,error:"Token admin tidak valid"},401);
   if (!env.NUMEROLOGY_CONFIG_R2) return json({ok:false,error:"Binding NUMEROLOGY_CONFIG_R2 belum terpasang"},503);
   if (request.method==="GET") {

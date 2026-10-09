@@ -19,7 +19,7 @@ export async function readSettings(bucket) {
 }
 export function authorized(request, env) {
   const expected = typeof env.NUMEROLOGY_ADMIN_TOKEN === "string" ? env.NUMEROLOGY_ADMIN_TOKEN.trim() : "";
-  if (expected.length < 32 || expected.length > 512) return "unconfigured";
+  if (expected.length < 2 || expected.length > 512) return "unconfigured";
   const found = /^Bearer\s+(.+)$/i.exec(request.headers.get("Authorization") || "")?.[1] || "";
   if (found.length !== expected.length) return false;
   let diff=0;

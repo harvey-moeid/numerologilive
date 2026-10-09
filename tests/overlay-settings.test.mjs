@@ -32,11 +32,16 @@ test("selected contexts are rendered from actual numerology interpretations",()=
   assert.match(formatReading(item,["career","advice"]),/Karier & pekerjaan: Karier\n\nSaran refleksi: Coba lagi/);
   assert.equal(formatReading(item,["general"]),"Umum");
 });
-test("admin requires long configured secret and rejects invalid token",async()=>{
+test("admin accepts 2-character tokens and rejects invalid or unconfigured secrets",async()=>{
   const ok=env();
   assert.equal((await adminRoute({request:req("GET",null,"wrong-token"),env:ok})).status,401);
   assert.equal((await adminRoute({request:req(),env:{NUMEROLOGY_CONFIG_R2:makeBucket()}})).status,503);
   assert.equal((await adminRoute({request:req(),env:{NUMEROLOGY_ADMIN_TOKEN:TOKEN}})).status,503);
+  const shortEnv={NUMEROLOGY_ADMIN_TOKEN:"A9",NUMEROLOGY_CONFIG_R2:makeBucket()};
+  assert.equal((await adminRoute({request:req("GET",null,"A9"),env:shortEnv})).status,200);
+  assert.equal((await adminRoute({request:req("GET",null,"A0"),env:shortEnv})).status,401);
+  assert.equal((await adminRoute({request:req("GET",null,"A9"),env:{...shortEnv,NUMEROLOGY_ADMIN_TOKEN:"A"}})).status,503);
+  assert.equal((await adminRoute({request:req("GET",null,"A9"),env:{...shortEnv,NUMEROLOGY_ADMIN_TOKEN:"Z".repeat(513)}})).status,503);
 });
 test("R2 JSON save loads into public overlay endpoint and no secret leaks",async()=>{
   const e=env();
@@ -70,6 +75,7 @@ test("admin UI and overlay bind to config endpoints, no admin token in public JS
   const html=readFileSync(new URL("../admin.html",import.meta.url),"utf8");
   const client=readFileSync(new URL("../admin.mjs",import.meta.url),"utf8");
   const overlay=readFileSync(new URL("../live-overlay.mjs",import.meta.url),"utf8");
+  assert.match(html,/id="adminToken"[^>]*minlength="2"[^>]*maxlength="512"/);
   assert.match(html,/id="contextChoices"/);
   assert.match(html,/id="save"/);
   assert.match(client,/\/api\/admin\/settings/);

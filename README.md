@@ -89,7 +89,7 @@ Buka **`/admin.html`** pada deployment Pages khusus repo ini. Panel menyediakan:
 
 1. Cloudflare → R2 Object Storage → buat bucket privat, misalnya `numerologilive-config`. Tidak perlu menyalakan public bucket URL.
 2. Di **Pages project yang terhubung dengan repo `numerologilive`**, buka Settings → Bindings → Add → **R2 bucket**. Pilih bucket tersebut dan gunakan nama binding **`NUMEROLOGY_CONFIG_R2`**. Pasang untuk Production (dan Preview bila perlu).
-3. Settings → Variables and Secrets → tambahkan secret **`NUMEROLOGY_ADMIN_TOKEN`** yang benar-benar acak, panjang 32–512 karakter. **Berbeda** dari `TLK_API_KEY` dan `TLK_OVERLAY_TOKEN`. Jangan simpan nilainya di GitHub atau URL OBS.
+3. Settings → Variables and Secrets → tambahkan secret **`NUMEROLOGY_ADMIN_TOKEN`** yang benar-benar acak, panjang 2–512 karakter (**32+ karakter sangat disarankan untuk produksi**). Token 2 karakter sangat mudah ditebak: jangan gunakan pada admin publik tanpa perlindungan tambahan seperti Cloudflare Access dan aturan pembatasan percobaan login (WAF). **Berbeda** dari `TLK_API_KEY` dan `TLK_OVERLAY_TOKEN`. Jangan simpan nilainya di GitHub atau URL OBS.
 4. Pastikan `TLK_API_KEY` dan `TLK_OVERLAY_TOKEN` tetap dikonfigurasi seperti sebelumnya. Deploy ulang Pages setelah menambah binding/secret.
 5. Kunjungi `/admin.html`, masukkan token admin, atur opsi, lalu klik **Simpan ke R2**. Bila file JSON belum ada, backend memberikan nilai default; save pertama membuatnya.
 

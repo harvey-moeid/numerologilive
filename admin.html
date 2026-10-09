@@ -14,7 +14,7 @@
   <section class="auth card" id="auth">
     <p class="eyebrow">ADMIN ACCESS</p><h2>Masuk ke Panel Admin</h2>
     <p>Masukkan secret <code>NUMEROLOGY_ADMIN_TOKEN</code> yang Anda simpan di Cloudflare. Kunci hanya dipakai selama halaman ini terbuka.</p>
-    <form id="authForm"><label for="adminToken">Token admin</label><input id="adminToken" type="password" minlength="32" autocomplete="off" placeholder="Minimal 32 karakter" required>
+    <form id="authForm"><label for="adminToken">Token admin</label><input id="adminToken" type="password" minlength="2" maxlength="512" autocomplete="off" placeholder="Minimal 2 karakter" required>
       <button type="submit" id="connectAdmin">Buka Pengaturan <span aria-hidden="true">→</span></button></form>
     <p id="authStatus" role="alert" class="notice"></p>
   </section>
