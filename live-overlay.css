@@ -286,3 +286,6 @@ html.transparent .card { background:linear-gradient(155deg,#302044e8,#150e28f0 6
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
 }
+
+/* Respect newline-separated reading topics selected by the admin. */
+.card .reading { white-space: pre-line; overflow-wrap: anywhere; }
