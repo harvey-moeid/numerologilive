@@ -51,13 +51,17 @@ export function parseDob(message,now=new Date(),{mode="flexible",autoCorrect=tru
       m=>[m[1],MONTHS[m[2]]||0,m[3]]);
     scan(/(?<!\d)(\d{2})(\d{2})(\d{4})(?!\d)/g,m=>[m[1],m[2],m[3]]);
     scan(/\b(?:tgl|tanggal)\.?\s*[:=]?\s*(\d{1,2})\s*[,./-]?\s*(?:bln|bulan)\.?\s*[:=]?\s*(\d{1,2})\s*[,./-]?\s*(?:thn|tahun)\.?\s*[:=]?\s*(\d{4}|\d{2})(?!\d)/g,m=>[m[1],m[2],m[3]]);
-    if (autoCorrect && birthdayCue.test(text))
+    scan(/\b(?:lahir|ttl)\s*(?:tgl|tanggal)?\s*[:=]?\s*(\d{1,2})\s*(?:bln|bulan)\s*(\d{1,2})\s*(?:thn|tahun)\s*(\d{4}|\d{2})(?!\d)/g,
+      m=>[m[1],m[2],m[3]]);
+    // Six digits are only date-like when alone or accompanied by a birth-date cue.
+    if (autoCorrect && (birthdayCue.test(text) || /^\d{6}$/.test(text.trim())))
       scan(/(?<!\d)(\d{2})(\d{2})(\d{2})(?!\d)/g,m=>[m[1],m[2],m[3]]);
   }
   const unique = [...new Set(matches)];
   if (unique.length === 1) return {status:"valid",iso:unique[0]};
   if (unique.length > 1) return {status:"invalid",reason:"ambiguous"};
-  if (complete || birthdayCue.test(text) || dateLike.test(text)) return {status:"invalid",reason:"format"};
+  if (complete || birthdayCue.test(text) || dateLike.test(text) || /^\d{6}$/.test(text.trim()))
+    return {status:"invalid",reason:"format"};
   return {status:"none"};
 }
 // Backward compatibility for existing consumers.

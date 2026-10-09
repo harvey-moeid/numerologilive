@@ -84,7 +84,7 @@ Buka **`/admin.html`** pada deployment Pages khusus repo ini. Panel menyediakan:
 - Edit nama brand, judul/deskripsi layar tunggu, dan disclaimer.
 - Tampilkan/sembunyikan nama penonton, nomor, judul, label gift/like, petunjuk, dan catatan.
 - Pratinjau di browser melalui `/live.html?preview=1` tanpa event TikTok asli.
-- Smart Date Parser untuk komentar LIVE: mode fleksibel (DD/MM/YYYY, DD-MM-YY, DD MM YY, nama bulan, YYYY-MM-DD, DDMMYYYY, atau `tgl 16 bulan 11 tahun 96`) dan mode ketat (wajib DD/MM/YYYY).
+- Smart Date Parser untuk komentar LIVE: mode fleksibel (DD/MM/YYYY, DD-MM-YY, DD MM YY, nama bulan, YYYY-MM-DD, DDMMYYYY, DDMMYY (jika seluruh komentar atau disertai kata lahir/tgl), atau `tgl 16 bulan 11 tahun 96`) dan mode ketat (wajib DD/MM/YYYY).
 - Koreksi tahun dua digit 96 → 1996 (mengikuti tahun berjalan), validasi tanggal kalender, serta penolakan tanggal ambigu, mustahil, dan masa depan. **Tanggal tidak pernah ditebak atau ditukar hari/bulan.**
 - Atur notifikasi overlay bila komentar mirip tanggal lahir tetapi salah/tidak lengkap, jeda anti-spam 10–180 detik per akun (ditambah batas global 4 detik), dan contoh tanggal pada layar tunggu.
 - Gunakan fitur **Uji Parser** dalam Admin untuk simulasi komentar sebelum LIVE; tidak mengirim komentar atau tanggal lahir ke server.

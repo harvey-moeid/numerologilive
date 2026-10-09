@@ -7,7 +7,7 @@ const e=(id,event,username,data={},roomId="10000")=>({id,event,roomId,data:{user
 test("smart DOB accepts Indonesian, mixed, compact, ISO and Unicode formats",()=>{
   for(const comment of ["16/11/1996","16-11-1996","16.11.1996","16 11 96","16/11/96",
     "16 November 1996","Aku lahir 16 nov 96","16111996","1996-11-16",
-    "tgl 16 bulan 11 tahun 96","tgl161196"])
+    "tgl 16 bulan 11 tahun 96","saya lahir 16 bulan 11 tahun 96","tgl161196","161196"])
     assert.equal(extractDob(comment,now()),"1996-11-16",comment);
   assert.equal(extractDob("０１／０２／２０００",now()),"2000-02-01");
 });
@@ -20,6 +20,7 @@ test("calendar validation rejects invalid, future, ambiguous and incomplete date
   assert.equal(extractDob("29/02/2000",now()),"2000-02-29");
   assert.equal(parseDob("halo min berapa like?",now()).status,"none");
   assert.equal(parseDob("BUY BTC 500",now()).status,"none");
+  assert.equal(parseDob("Kode promo 161196",now()).status,"none");
 });
 test("strict mode and disabled year correction never guess",()=>{
   assert.equal(extractDob("lahir 16/11/1996",now(),{mode:"strict"}),"1996-11-16");
@@ -27,6 +28,7 @@ test("strict mode and disabled year correction never guess",()=>{
     assert.equal(parseDob(value,now(),{mode:"strict"}).status,"invalid",value);
   assert.equal(parseDob("16/11/96",now(),{autoCorrect:false}).status,"invalid");
   assert.equal(extractDob("16/11/1996",now(),{autoCorrect:false}),"1996-11-16");
+  assert.equal(parseDob("161196",now(),{mode:"strict"}).status,"invalid");
 });
 test("gift requires own valid DOB and malformed correction revokes pending",()=>{
   const l=new LiveEngine({now,likeThreshold:400});
