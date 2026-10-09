@@ -27,3 +27,14 @@ input[type=checkbox]{accent-color:#e2b778;width:17px;height:17px;flex:none;curso
 code{font-size:.85em;color:#ffe0b0;overflow-wrap:anywhere}
 @media(max-width:1050px){.workspace{grid-template-columns:1fr}.preview-column{position:static;display:grid;grid-template-columns:1fr 1fr}.intro{align-items:start;flex-direction:column}}
 @media(max-width:700px){.shell{padding:15px 12px 50px}.topbar{gap:10px;flex-wrap:wrap;padding-bottom:18px}.topbar nav{margin:10px 0 0;width:100%;justify-content:flex-start}.intro{margin:27px 2px}.choices,.toggles,.preview-column{grid-template-columns:1fr}.card{border-radius:18px;padding:18px}.status{width:100%;justify-content:space-between}.actions button{flex:1 1 auto}.mock{min-height:300px}.auth{margin:35px auto}}
+
+/* Smart DOB parser settings and local test tool */
+#dobMode{width:100%;min-width:0;background:#100e20;color:white;border:1px solid #514968;border-radius:12px;padding:13px 15px;font:inherit;margin:9px 0 15px}
+#dobMode:focus-visible{outline:2px solid #ebcc90;outline-offset:3px}
+#dobHelpText,#dobNoticeCooldownSeconds{margin:8px 0 14px}
+.parser-test{display:flex;gap:10px;margin:10px 0}
+.parser-test input{flex:1;min-width:0}
+.parser-test button{border:1px solid #a38762;border-radius:12px;background:#342847;color:#f7dfb9;padding:11px 15px;font-weight:800;flex:none}
+.test-result{border-left:2px solid #c4a06e;padding:9px 12px;margin:0;background:#ffffff06}
+.mock-parser{color:#eac996;font-size:11px;line-height:1.4}
+@media(max-width:480px){.parser-test{flex-direction:column}.parser-test button{width:100%}}

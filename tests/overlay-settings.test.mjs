@@ -25,6 +25,9 @@ test("settings normalize unknown context and bound numeric/string inputs",()=>{
   assert.equal(value.giftsEnabled,true);
   assert.ok(value.siteName.length<=50);
   assert.equal(Object.keys(CONTEXT_LABELS).length,6);
+  assert.equal(normalizeSettings({}).dobMode,"flexible");
+  assert.equal(normalizeSettings({dobMode:"fake"}).dobMode,"flexible");
+  assert.equal(normalizeSettings({dobNoticeCooldownSeconds:900}).dobNoticeCooldownSeconds,45);
 });
 test("selected contexts are rendered from actual numerology interpretations",()=>{
   const item={summary:"Umum",relationships:"Cinta",career:"Karier",strengths:["Teguh"],challenges:["Ragu"],advice:["Coba lagi"]};
@@ -47,7 +50,9 @@ test("R2 JSON save loads into public overlay endpoint and no secret leaks",async
   const e=env();
   const initial=await (await adminRoute({request:req(),env:e})).json();
   assert.deepEqual(initial.settings.contexts,DEFAULT_SETTINGS.contexts);
-  const desired={...DEFAULT_SETTINGS,siteName:"JALUR LIVE",contexts:["love","career"],giftMinimum:5,likeThreshold:600};
+  const desired={...DEFAULT_SETTINGS,siteName:"JALUR LIVE",contexts:["love","career"],giftMinimum:5,likeThreshold:600,
+    dobMode:"strict",dobAutoCorrect:false,dobErrorNotices:false,dobNoticeCooldownSeconds:60,
+    dobHelpText:"Tulis DD/MM/YYYY"};
   const saved=await adminRoute({request:req("PUT",desired),env:e});
   assert.equal(saved.status,200);
   const pub=await publicRoute({env:e});
@@ -55,12 +60,22 @@ test("R2 JSON save loads into public overlay endpoint and no secret leaks",async
   const raw=await pub.text();
   assert.equal(raw.includes(TOKEN),false);
   assert.equal(JSON.parse(raw).settings.giftMinimum,5);
+  assert.equal(JSON.parse(raw).settings.dobMode,"strict");
+  assert.equal(JSON.parse(raw).settings.dobAutoCorrect,false);
+  assert.equal(JSON.parse(raw).settings.dobErrorNotices,false);
+  assert.equal(JSON.parse(raw).settings.dobHelpText,"Tulis DD/MM/YYYY");
   assert.deepEqual((await (await adminRoute({request:req(),env:e})).json()).settings.contexts,["love","career"]);
 });
 test("admin rejects missing contexts, disabled triggers, invalid JSON, wrong origin",async()=>{
   const e=env();
   assert.equal((await adminRoute({request:req("PUT",{...DEFAULT_SETTINGS,contexts:[]}),env:e})).status,400);
   assert.equal((await adminRoute({request:req("PUT",{...DEFAULT_SETTINGS,likesEnabled:false,giftsEnabled:false}),env:e})).status,400);
+  for (const invalid of [
+    {...DEFAULT_SETTINGS,dobMode:"unknown"},
+    {...DEFAULT_SETTINGS,dobAutoCorrect:"yes"},
+    {...DEFAULT_SETTINGS,dobNoticeCooldownSeconds:0},
+    {...DEFAULT_SETTINGS,dobHelpText:"X".repeat(121)}
+  ]) assert.equal((await adminRoute({request:req("PUT",invalid),env:e})).status,400);
   const wrongOrigin=new Request("https://numerology.example/api/admin/settings",{
     method:"PUT",headers:{Authorization:"Bearer "+TOKEN,"Origin":"https://attacker.example","Content-Type":"application/json"},
     body:JSON.stringify(DEFAULT_SETTINGS)
@@ -77,6 +92,9 @@ test("admin UI and overlay bind to config endpoints, no admin token in public JS
   const overlay=readFileSync(new URL("../live-overlay.mjs",import.meta.url),"utf8");
   assert.match(html,/id="adminToken"[^>]*minlength="2"[^>]*maxlength="512"/);
   assert.match(html,/id="contextChoices"/);
+  for (const id of ["dobMode","dobAutoCorrect","dobErrorNotices","dobHelpText","dobTestInput","dobTestButton"])
+    assert.match(html,new RegExp('id="'+id+'"'));
+  assert.match(client,/parseDob/);
   assert.match(html,/id="save"/);
   assert.match(client,/\/api\/admin\/settings/);
   assert.match(overlay,/\/api\/overlay-config/);

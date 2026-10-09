@@ -18,6 +18,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   likeThreshold: 400,
   giftMinimum: 1,
   durationSeconds: 13,
+  dobMode: "flexible",
+  dobAutoCorrect: true,
+  dobErrorNotices: true,
+  dobNoticeCooldownSeconds: 45,
+  dobHelpText: "Contoh: 16/11/1996",
   showBrand: true,
   showUsername: true,
   showNumber: true,
@@ -45,7 +50,14 @@ export function normalizeSettings(value = {}) {
     giftsEnabled: typeof x.giftsEnabled === "boolean" ? x.giftsEnabled : DEFAULT_SETTINGS.giftsEnabled,
     likeThreshold: positiveInt(x.likeThreshold, DEFAULT_SETTINGS.likeThreshold, 100000),
     giftMinimum: positiveInt(x.giftMinimum, DEFAULT_SETTINGS.giftMinimum, 100000),
-    durationSeconds: positiveInt(x.durationSeconds, DEFAULT_SETTINGS.durationSeconds, 120)
+    durationSeconds: positiveInt(x.durationSeconds, DEFAULT_SETTINGS.durationSeconds, 120),
+    dobMode: ["strict","flexible"].includes(x.dobMode) ? x.dobMode : DEFAULT_SETTINGS.dobMode,
+    dobAutoCorrect: typeof x.dobAutoCorrect === "boolean" ? x.dobAutoCorrect : DEFAULT_SETTINGS.dobAutoCorrect,
+    dobErrorNotices: typeof x.dobErrorNotices === "boolean" ? x.dobErrorNotices : DEFAULT_SETTINGS.dobErrorNotices,
+    dobNoticeCooldownSeconds: Number.isSafeInteger(x.dobNoticeCooldownSeconds) &&
+      x.dobNoticeCooldownSeconds >= 10 && x.dobNoticeCooldownSeconds <= 180
+      ? x.dobNoticeCooldownSeconds : DEFAULT_SETTINGS.dobNoticeCooldownSeconds,
+    dobHelpText: cleanText(x.dobHelpText, DEFAULT_SETTINGS.dobHelpText, 120)
   };
   for (const k of ["showBrand","showUsername","showNumber","showTitle","showReason","showDisclaimer","showInstructions"]) {
     settings[k] = typeof x[k] === "boolean" ? x[k] : DEFAULT_SETTINGS[k];
