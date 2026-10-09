@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jalur Numerology — Overlay TikTok LIVE</title>
+<script>if(new URLSearchParams(location.search).get("transparent")==="1")document.documentElement.classList.add("transparent")</script>
+<link rel="stylesheet" href="/live-overlay.css">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+</head>
+<body>
+<main class="stage">
+ <header class="brand"><span class="brand-icon">✦</span><div><strong>JALUR <span>NUMEROLOGY</span></strong><small>LIVE · ANGKA HIDUP</small></div><div id="liveDot" class="live-dot">OFFLINE</div></header>
+ <div class="center">
+  <div class="live-sparkles" aria-hidden="true">✧ &nbsp; ✦ &nbsp; ✧</div>
+  <section class="card" id="card" aria-live="polite" hidden>
+   <div class="reason" id="reason">✨ HASIL ANGKA HIDUP</div>
+   <h2 id="person">Penonton</h2>
+   <div class="number" id="lifeNumber">1</div>
+   <h3 id="lifeName">Sang Pemimpin</h3>
+   <p id="lifeReading"></p>
+   <p class="disclaimer">Numerologi untuk hiburan &amp; refleksi pribadi</p>
+  </section>
+  <section class="idle" id="idle">
+   <div class="planet" aria-hidden="true">✦</div>
+   <h1>Temukan Angka Hidupmu</h1>
+   <p>Ketik tanggal lahir di komentar, contoh <b>16/11/1996</b></p>
+   <p>Hasil muncul setelah <b id="giftHint">gift ≥ 1 koin</b> atau <b id="likeHint">400 like</b>.</p>
+   <p class="pending" id="pending" hidden></p>
+  </section>
+ </div>
+ <footer class="foot"><span id="connectionMessage">Menunggu koneksi overlay</span><span>Jalur Numerology</span></footer>
+</main>
+<section class="unlock" id="unlock">
+ <form id="unlockForm" class="unlock-box">
+  <div class="unlock-mark">✦</div><h2>Aktifkan Overlay LIVE</h2>
+  <p>Masukkan token overlay dari Cloudflare. Token ini berbeda dari API key konektor TikTok.</p>
+  <label for="token">Token Overlay</label>
+  <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="TLK_OVERLAY_TOKEN" minlength="24" required>
+  <button type="submit" id="connectBtn">Hubungkan Overlay</button>
+  <p class="error" id="unlockError" role="alert"></p>
+ </form>
+</section>
+<script src="/calculator.js"></script><script src="/interpretations.js"></script>
+<script type="module" src="/live-overlay.mjs"></script>
+</body></html>
