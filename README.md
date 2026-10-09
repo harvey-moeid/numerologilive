@@ -35,6 +35,14 @@ Jangan menyimpan secret di GitHub, file publik, `index.html`, atau JavaScript fr
 
 **Catatan domain:** Pada pemeriksaan 9 Oktober 2026, `numerology.muidsoft.com` masih terikat ke Pages project `numerologi-angka-hidup-deploy` yang memakai **repo lain**. Commit ke `numerologilive` tidak otomatis mengganti deployment website yang memakai repo lain. Hubungkan Pages project khusus ke repo ini terlebih dahulu; jangan pindahkan domain sebelum project baru lolos verifikasi.
 
+## Desain premium LIVE Overlay
+
+Overlay `/live.html` menggunakan tema *celestial luxury*: gerbang kosmik, kristal, aksen emas, kartu numerologi bercahaya, dan efek atmosfer yang dibuat dari SVG serta CSS lokal. Desain adaptif untuk **OBS portrait (9:16) maupun landscape (16:9)** dan menyediakan animasi yang mengikuti pengaturan *reduced motion*. Tidak memakai screenshot statis yang berisi angka atau teks palsu: semuanya tetap diperbarui oleh event asli.
+
+**Pratinjau desain tanpa token maupun event TikTok:** buka `/live.html?preview=1`. Ini memakai sampel angka 7 dan username fiktif `@penonton_live`, diberi status PREVIEW (bukan indikator LIVE asli). Untuk mencoba background transparan gunakan `/live.html?preview=1&transparent=1`.
+
+**Mode streaming sebenarnya:** buka `/live.html` lalu masukkan token overlay, atau pakai URL OBS dengan fragmen akses sesuai petunjuk di bawah. Gunakan `?transparent=1` apabila video TikTok menjadi latar belakang; dalam mode tersebut seluruh dekorasi background disembunyikan agar sumber video tetap terlihat, sementara kartu dan panel depan tetap premium.
+
 ## Menggunakan overlay OBS
 
 1. Buka `https://<nama-project>.pages.dev/live.html` dan masukkan `TLK_OVERLAY_TOKEN`. Setelah tersambung, token disimpan hanya dalam **sessionStorage** browser tersebut.

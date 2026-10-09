@@ -20,7 +20,14 @@ function showCard(item) {
   $("lifeNumber").textContent = n;
   $("lifeName").textContent = info.title;
   $("lifeReading").textContent = info.summary;
-  $("idle").hidden = true; $("card").hidden = false;
+  const card = $("card");
+  card.dataset.via = item.via === "like" ? "like" : "gift";
+  $("idle").hidden = true;
+  card.hidden = false;
+  // Restart entrance animation for consecutive readings without hiding their content.
+  card.style.animation = "none";
+  void card.offsetWidth;
+  card.style.animation = "";
 }
 function advanceQueue() {
   clearTimeout(displayTimer);
@@ -73,8 +80,9 @@ async function poll() {
     if (Date.now() - lastStatus > 14000) {
       lastStatus = Date.now();
       const status = await request("status");
-      $("liveDot").textContent = status.running ? "● LIVE" : "OFFLINE";
+      $("liveDotLabel").textContent = status.running ? "LIVE" : "OFFLINE";
       $("liveDot").classList.toggle("on", status.running);
+      document.querySelector(".stage").classList.toggle("connected", status.running);
       setConnection(status.running ? "Terhubung ke @" + (status.username || "TikTok LIVE") :
         "Konektor siap · siaran belum aktif");
     }
@@ -103,6 +111,14 @@ async function activate(value) {
   } finally { $("connectBtn").disabled = false; }
 }
 $("unlockForm").addEventListener("submit", event=>{event.preventDefault();activate($("token").value);});
+// The preview is intentionally local-only: it never contacts the LIVE API or uses an auth token.
+if (qp.get("preview") === "1") {
+  $("unlock").hidden = true;
+  $("liveDotLabel").textContent = "PREVIEW";
+  $("liveDot").classList.add("preview");
+  setConnection("Mode pratinjau · tidak terhubung ke TikTok LIVE");
+  showCard({ nickname: "penonton_live", iso: "1996-11-16", via: "gift", giftName: "Rose" });
+} else {
 const fragment = new URLSearchParams(location.hash.replace(/^#/,""));
 const fromFragment = fragment.get("access");
 if (fromFragment) {
@@ -111,4 +127,5 @@ if (fromFragment) {
 } else {
   const saved = sessionStorage.getItem("numerology_overlay_token");
   if (saved) activate(saved);
+}
 }
