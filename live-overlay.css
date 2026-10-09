@@ -289,3 +289,6 @@ html.transparent .card { background:linear-gradient(155deg,#302044e8,#150e28f0 6
 
 /* Respect newline-separated reading topics selected by the admin. */
 .card .reading { white-space: pre-line; overflow-wrap: anywhere; }
+
+/* Smart DOB feedback: subtle warning chip, never mistaken for a paid reading. */
+.pending[data-kind="invalid"] { color:#ffe2d9;border-color:#f6a59f9e;background:#422235eb;box-shadow:0 0 20px #b85d6736; }

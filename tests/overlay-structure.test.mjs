@@ -9,7 +9,7 @@ const svg = readFileSync(new URL("../assets/overlay/celestial-hall.svg", import.
 
 test("premium overlay retains DOM bindings for event processing and authentication", () => {
   const required = ["card","reason","person","lifeNumber","lifeName","lifeReading",
-    "idle","pending","giftHint","likeHint","liveDot","liveDotLabel",
+    "idle","pending","dobHint","giftHint","likeHint","liveDot","liveDotLabel",
     "connectionMessage","unlock","unlockForm","token","connectBtn","unlockError"];
   for (const id of required)
     assert.match(html, new RegExp('id="' + id + '"'), "missing: " + id);
@@ -26,6 +26,10 @@ test("premium overlay supports privacy-safe previews and real LIVE mode", () => 
   assert.match(js, /request\("events\?limit=1",true\)/);
   assert.match(js, /"numerology_overlay_token"/);
   assert.doesNotMatch(html, /Bearer [A-Za-z0-9_-]{24,}/);
+  for (const field of ["dobMode","dobAutoCorrect","dobErrorNotices","dobNoticeCooldownSeconds","dobHelpText"])
+    assert.match(js,new RegExp("settings\\."+field));
+  assert.match(js,/result.type === "invalid"/);
+  assert.match(css,/pending\[data-kind="invalid"\]/);
 });
 
 test("portrait, landscape, transparent and reduced-motion variants retain atmosphere", () => {

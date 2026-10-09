@@ -8,8 +8,8 @@ const MONTHS = Object.freeze({
 });
 const pad = n => String(n).padStart(2,"0");
 const isoOf = (day,month,year) => year + "-" + pad(month) + "-" + pad(day);
-const birthdayCue = /\b(?:lahir|ttl|dob|ultah|birthday|birthdate|tanggal|tgl)\b/;
-const dateLike = /(?<!\d)\d{1,2}\s*[\/.-]\s*\d{1,2}(?!\d)|(?<!\d)\d{1,2}\s+(?:jan|feb|mar|apr|mei|may|jun|jul|agu|agt|aug|sep|okt|oct|nov|des)[a-z]*\b|(?<!\d)\d{4}\s*[-/]\s*\d{1,2}\s*[-/]\s*\d{1,2}(?!\d)/;
+const birthdayCue = /\b(?:lahir|ttl|dob|ultah|birthday|birthdate|tanggal|tgl)\b|(?:^|\W)(?:tgl|tanggal)(?=\d{6}\b)/;
+const dateLike = /(?<!\d)\d{1,2}\s*[\/.-]\s*\d{1,2}(?!\d)|(?<!\d)\d{1,2}\s+(?:jan|feb|mar|apr|mei|may|jun|jul|agu|agt|aug|sep|okt|oct|nov|des)[a-z]*\b|(?<!\d)\d{4}\s*[-/]\s*\d{1,2}\s*[-/]\s*\d{1,2}(?!\d)|(?<!\d)\d{8}(?!\d)/;
 function fullYear(raw,currentYear,autoCorrect) {
   if (raw.length === 4) return Number(raw);
   if (!autoCorrect) return null;
