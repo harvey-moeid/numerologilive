@@ -1,45 +1,105 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Jalur Numerology — Overlay TikTok LIVE</title>
-<script>if(new URLSearchParams(location.search).get("transparent")==="1")document.documentElement.classList.add("transparent")</script>
-<link rel="stylesheet" href="/live-overlay.css">
-<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#100b24">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>Jalur Numerology — Premium LIVE Overlay</title>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      if (params.get("transparent") === "1") document.documentElement.classList.add("transparent");
+      if (params.get("preview") === "1") document.documentElement.classList.add("preview");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/live-overlay.css">
 </head>
 <body>
-<main class="stage">
- <header class="brand"><span class="brand-icon">✦</span><div><strong>JALUR <span>NUMEROLOGY</span></strong><small>LIVE · ANGKA HIDUP</small></div><div id="liveDot" class="live-dot">OFFLINE</div></header>
- <div class="center">
-  <div class="live-sparkles" aria-hidden="true">✧ &nbsp; ✦ &nbsp; ✧</div>
-  <section class="card" id="card" aria-live="polite" hidden>
-   <div class="reason" id="reason">✨ HASIL ANGKA HIDUP</div>
-   <h2 id="person">Penonton</h2>
-   <div class="number" id="lifeNumber">1</div>
-   <h3 id="lifeName">Sang Pemimpin</h3>
-   <p id="lifeReading"></p>
-   <p class="disclaimer">Numerologi untuk hiburan &amp; refleksi pribadi</p>
+  <div class="scene" aria-hidden="true">
+    <div class="scene-art"></div>
+    <div class="scene-haze"></div>
+    <div class="scene-glow"></div>
+    <div class="scene-floor"></div>
+    <div class="scene-orbit scene-orbit-left"></div>
+    <div class="scene-orbit scene-orbit-right"></div>
+  </div>
+
+  <main class="stage">
+    <header class="brand">
+      <div class="brand-ornament brand-ornament-left" aria-hidden="true">✦ <span>☾</span> ✧</div>
+      <div class="brand-plaque">
+        <div class="brand-crown" aria-hidden="true">✦ &nbsp; ☾ &nbsp; ✦</div>
+        <strong>JALUR <span>NUMEROLOGY</span></strong>
+        <small><span class="eyebrow-line"></span> LIVE · ANGKA HIDUP <span class="eyebrow-line"></span></small>
+      </div>
+      <div id="liveDot" class="live-dot" aria-label="Status TikTok LIVE"><span class="status-light" aria-hidden="true"></span><span id="liveDotLabel">OFFLINE</span></div>
+      <div class="brand-ornament brand-ornament-right" aria-hidden="true">✧ <span>☽</span> ✦</div>
+    </header>
+
+    <div class="center">
+      <div class="center-halo" aria-hidden="true"><span></span><span></span><span></span></div>
+      <section class="card" id="card" aria-live="polite" aria-atomic="true" hidden>
+        <div class="card-glimmer" aria-hidden="true"></div>
+        <div class="reason-wrap"><span class="reason-icon" aria-hidden="true">✦</span><span class="reason" id="reason">GIFT · Rose</span></div>
+        <p class="recipient-label">PEMBACAAN ANGKA HIDUP UNTUK</p>
+        <h2 id="person">Penonton</h2>
+        <div class="number-orbit">
+          <div class="orbit-line orbit-line-one" aria-hidden="true"></div>
+          <div class="orbit-line orbit-line-two" aria-hidden="true"></div>
+          <span class="orbit-star orbit-star-a" aria-hidden="true">✧</span>
+          <span class="orbit-star orbit-star-b" aria-hidden="true">✦</span>
+          <span class="orbit-star orbit-star-c" aria-hidden="true">✧</span>
+          <div class="number" id="lifeNumber">7</div>
+        </div>
+        <div class="title-divider" aria-hidden="true"><span></span>✦<span></span></div>
+        <h3 id="lifeName">Sang Pencari Makna</h3>
+        <p class="reading" id="lifeReading">Membuka makna dan potensi dalam setiap angka kehidupan.</p>
+        <div class="card-end" aria-hidden="true"><span></span>✧<span></span></div>
+        <p class="disclaimer">Numerologi untuk hiburan &amp; refleksi pribadi</p>
+      </section>
+
+      <section class="idle" id="idle" aria-label="Petunjuk TikTok LIVE">
+        <div class="idle-seal" aria-hidden="true"><span>✦</span><span class="seal-ring"></span></div>
+        <p class="idle-overline">✧ SELAMAT DATANG DI JALUR NUMEROLOGY ✧</p>
+        <h1>Temukan <em>Angka Hidupmu</em></h1>
+        <p class="idle-intro">Setiap tanggal punya kisah. Temukan makna di balik angka kehidupanmu melalui LIVE ini.</p>
+        <div class="steps">
+          <div class="step"><span class="step-num">01</span><div><b>Ketik tanggal lahir</b><span>Contoh: 16/11/1996</span></div></div>
+          <span class="step-arrow" aria-hidden="true">✧</span>
+          <div class="step"><span class="step-num">02</span><div><b>Buka pembacaan</b><span><span id="giftHint">gift ≥ 1 koin</span> atau <span id="likeHint">400 like</span></span></div></div>
+        </div>
+        <p class="pending" id="pending" role="status" hidden></p>
+      </section>
+    </div>
+
+    <footer class="foot">
+      <div class="connection"><span class="connection-light" aria-hidden="true"></span><span id="connectionMessage">Menunggu koneksi overlay</span></div>
+      <span class="footer-ornament" aria-hidden="true">☾ &nbsp; ✦ &nbsp; ☽</span>
+      <span class="footer-brand">JALUR NUMEROLOGY <span>· LIVE</span></span>
+    </footer>
+  </main>
+
+  <section class="unlock" id="unlock">
+    <form id="unlockForm" class="unlock-box">
+      <div class="unlock-mark" aria-hidden="true">☾ <span>✦</span> ☽</div>
+      <p class="unlock-eyebrow">JALUR NUMEROLOGY</p>
+      <h2>Mulai Pengalaman LIVE</h2>
+      <p class="unlock-copy">Masukkan token overlay Cloudflare agar pembacaan numerologi terhubung dengan event TikTok LIVE.</p>
+      <label for="token">TOKEN OVERLAY</label>
+      <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="Masukkan token overlay" minlength="24" required>
+      <button type="submit" id="connectBtn"><span>Hubungkan Overlay</span><span aria-hidden="true">✦</span></button>
+      <p class="error" id="unlockError" role="alert" aria-live="assertive"></p>
+      <p class="unlock-note">Koneksi aman melalui Cloudflare · Token tidak ditampilkan ke penonton</p>
+    </form>
   </section>
-  <section class="idle" id="idle">
-   <div class="planet" aria-hidden="true">✦</div>
-   <h1>Temukan Angka Hidupmu</h1>
-   <p>Ketik tanggal lahir di komentar, contoh <b>16/11/1996</b></p>
-   <p>Hasil muncul setelah <b id="giftHint">gift ≥ 1 koin</b> atau <b id="likeHint">400 like</b>.</p>
-   <p class="pending" id="pending" hidden></p>
-  </section>
- </div>
- <footer class="foot"><span id="connectionMessage">Menunggu koneksi overlay</span><span>Jalur Numerology</span></footer>
-</main>
-<section class="unlock" id="unlock">
- <form id="unlockForm" class="unlock-box">
-  <div class="unlock-mark">✦</div><h2>Aktifkan Overlay LIVE</h2>
-  <p>Masukkan token overlay dari Cloudflare. Token ini berbeda dari API key konektor TikTok.</p>
-  <label for="token">Token Overlay</label>
-  <input type="password" id="token" autocomplete="off" spellcheck="false" placeholder="TLK_OVERLAY_TOKEN" minlength="24" required>
-  <button type="submit" id="connectBtn">Hubungkan Overlay</button>
-  <p class="error" id="unlockError" role="alert"></p>
- </form>
-</section>
-<script src="/calculator.js"></script><script src="/interpretations.js"></script>
-<script type="module" src="/live-overlay.mjs"></script>
-</body></html>
+
+  <script src="/calculator.js"></script>
+  <script src="/interpretations.js"></script>
+  <script type="module" src="/live-overlay.mjs"></script>
+</body>
+</html>
