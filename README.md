@@ -12,7 +12,6 @@ Website statis kalkulator numerologi Angka Hidup, berbahasa Indonesia. Domain: [
 - `assets/og/` — Open Graph image
 - `robots.txt`
 - `sitemap.xml`
-- `render.yaml` — konfigurasi Blueprint Render untuk service listener (lihat di bawah)
 - `PRD_Kalkulator_Numerologi_Angka_Hidup_Lengkap.md`
 - `listener/` — service Node.js terpisah: konektor TikTok Live + overlay OBS + panel admin. Detail lengkap ada di [`listener/README.md`](listener/README.md).
 
@@ -21,7 +20,7 @@ Build command: kosongkan (static site).
 Output directory: `/` (root proyek).
 
 ## Listener TikTok Live + Overlay (`listener/`)
-Service Node.js terpisah yang mendengarkan komen & gift di TikTok Live, menghitung Angka Hidup dari tanggal lahir yang ditulis penonton, lalu menampilkannya sebagai overlay premium di OBS. Ada panel admin untuk toggle on/off. Deploy sebagai Web Service terpisah di Render (bisa lewat `render.yaml`). Lihat [`listener/README.md`](listener/README.md) untuk cara menjalankan lokal dan deploy.
+Service Node.js terpisah yang mendengarkan komen & gift di TikTok Live, menghitung Angka Hidup dari tanggal lahir yang ditulis penonton, lalu menampilkannya sebagai overlay premium di OBS. Ada panel admin untuk toggle on/off. Jalankan secara lokal atau deploy manual sebagai service Node.js terpisah. Tidak ada workflow atau Blueprint otomatis untuk deploy Render. Lihat [`listener/README.md`](listener/README.md) untuk cara menjalankan dan deploy manual.
 
 ## Catatan production
 Validasi rumus metode "Power of Numbers" dan review tafsiran sebelum production.
