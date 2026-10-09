@@ -43,11 +43,17 @@ function handleEvent(event) {
   if (event?.event === "like" && !settings.likesEnabled) return;
   const result = engine.handle(event);
   if (!result) return;
-  if (result.type === "pending") {
+  if (result.type === "pending" || result.type === "invalid") {
     $("pending").hidden = false;
-    $("pending").textContent = "✨ Tanggal lahir @" + result.nickname + " diterima. Menunggu gift / like...";
+    $("pending").dataset.kind = result.type;
+    const format = settings.dobMode === "strict" ? "DD/MM/YYYY" : "16/11/1996 atau 16 Nov 1996";
+    $("pending").textContent = result.type === "pending"
+      ? "✨ Tanggal lahir @" + result.nickname + " diterima. Menunggu gift / like..."
+      : result.reason === "ambiguous"
+        ? "✨ @" + result.nickname + ", kirim satu tanggal lahir saja ya. Contoh: 16/11/1996"
+        : "✨ @" + result.nickname + ", tanggal belum terbaca. Coba tulis " + format;
     clearTimeout(pendingTimer);
-    pendingTimer = setTimeout(() => { $("pending").hidden = true; }, 5500);
+    pendingTimer = setTimeout(() => { $("pending").hidden = true; }, result.type === "invalid" ? 6500 : 5500);
     return;
   }
   if (result.type === "result") {
@@ -83,6 +89,11 @@ async function reloadSettings() {
     gift=clamped(qp.get("gift"),settings.giftMinimum);
     engine.likeThreshold=likes;
     engine.giftMinimum=gift;
+    engine.dobMode=settings.dobMode;
+    engine.dobAutoCorrect=settings.dobAutoCorrect;
+    engine.dobErrorNotices=settings.dobErrorNotices;
+    engine.dobNoticeCooldownSeconds=settings.dobNoticeCooldownSeconds;
+    $("dobHint").textContent=settings.dobMode==="strict"?"Format wajib: DD/MM/YYYY":settings.dobHelpText;
     $("giftHint").textContent=settings.giftsEnabled?"gift ≥ "+gift+" koin":"gift dinonaktifkan";
     $("likeHint").textContent=settings.likesEnabled?likes+" like":"like dinonaktifkan";
     document.querySelector(".brand strong").textContent=settings.siteName;

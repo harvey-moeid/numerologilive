@@ -51,6 +51,8 @@ Overlay `/live.html` menggunakan tema *celestial luxury*: gerbang kosmik, krista
 4. Hasil numerologi tampil setelah penonton yang sama mengirim **gift minimal 1 koin** atau mencapai **400 like kumulatif** dalam sesi overlay.
 5. Ambang OBS dapat diatur untuk halaman tersebut dengan `?likes=400&gift=1`; `?transparent=1` untuk background transparan. Durasi tampil kartu default ±13 detik (`duration=13`).
 
+**Catatan Smart Parser:** Hanya komentar yang mengandung pola/indikasi tanggal lahir yang diproses; komentar biasa diabaikan. Format 2 digit tidak selalu bisa membedakan kelahiran abad lalu: 96 → 1996 dan 05 → 2005, jadi gunakan tahun 4 digit jika ragu. Jika satu pesan memuat dua tanggal berbeda, sistem meminta penonton mengulang dengan satu tanggal. Notifikasi hanya muncul di overlay (tidak mengirim balasan TikTok) dan dapat diubah di Admin. Tanggal yang salah membatalkan tanggal sebelumnya untuk akun tersebut, sehingga gift/like tidak memakai tanggal yang salah. Data tanggal lahir tetap hanya di memori OBS.
+ 
 **Batasan:** Ini *polling* history konektor (hingga 200 event terbaru per request), **bukan** push realtime atau delivery tepat sekali. History konektor hanya dalam memori Render. Buka overlay **sebelum** menerima komentar; saat overlay mulai, history lama sengaja dilewatkan agar hadiah lama tidak memicu ramalan ulang. Restart overlay menghapus tanggal lahir dan jumlah like yang belum diproses. Jika memerlukan persistence dan keandalan tinggi saat traffic padat, integrasi webhook + D1 dan idempotency harus ditambahkan di fase berikutnya.
 
 ## Endpoints
@@ -82,6 +84,10 @@ Buka **`/admin.html`** pada deployment Pages khusus repo ini. Panel menyediakan:
 - Edit nama brand, judul/deskripsi layar tunggu, dan disclaimer.
 - Tampilkan/sembunyikan nama penonton, nomor, judul, label gift/like, petunjuk, dan catatan.
 - Pratinjau di browser melalui `/live.html?preview=1` tanpa event TikTok asli.
+- Smart Date Parser untuk komentar LIVE: mode fleksibel (DD/MM/YYYY, DD-MM-YY, DD MM YY, nama bulan, YYYY-MM-DD, DDMMYYYY, DDMMYY (jika seluruh komentar atau disertai kata lahir/tgl), atau `tgl 16 bulan 11 tahun 96`) dan mode ketat (wajib DD/MM/YYYY).
+- Koreksi tahun dua digit 96 → 1996 (mengikuti tahun berjalan), validasi tanggal kalender, serta penolakan tanggal ambigu, mustahil, dan masa depan. **Tanggal tidak pernah ditebak atau ditukar hari/bulan.**
+- Atur notifikasi overlay bila komentar mirip tanggal lahir tetapi salah/tidak lengkap, jeda anti-spam 10–180 detik per akun (ditambah batas global 4 detik), dan contoh tanggal pada layar tunggu.
+- Gunakan fitur **Uji Parser** dalam Admin untuk simulasi komentar sebelum LIVE; tidak mengirim komentar atau tanggal lahir ke server.
 
 **Tidak menggunakan D1, KV, ataupun layanan listener baru.** Pengaturan disimpan sebagai **satu objek JSON** `settings/overlay.json` pada bucket R2 privat melalui binding Cloudflare Pages Functions. Overlay mengakses konfigurasi publik yang sudah disanitasi dari `GET /api/overlay-config`; token admin tidak diekspos. Perubahan diambil oleh overlay setiap sekitar 30 detik, lalu berlaku untuk pembacaan berikutnya. Query OBS `?likes=`, `?gift=`, `?duration=` tetap dapat dipakai untuk override khusus sumber OBS.
 

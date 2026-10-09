@@ -31,6 +31,18 @@ export async function onRequest({request,env}) {
       if (!Number.isSafeInteger(body[field]) || body[field]<1) return json({ok:false,error:"Nilai "+field+" harus bilangan positif"},400);
     }
   } catch { return json({ok:false,error:"Payload JSON tidak valid"},400); }
+  if (body.dobMode !== undefined && !["strict","flexible"].includes(body.dobMode))
+    return json({ok:false,error:"Mode parser tidak dikenal"},400);
+  for (const field of ["dobAutoCorrect","dobErrorNotices"])
+    if (body[field] !== undefined && typeof body[field] !== "boolean")
+      return json({ok:false,error:"Nilai "+field+" harus boolean"},400);
+  if (body.dobNoticeCooldownSeconds !== undefined &&
+      (!Number.isSafeInteger(body.dobNoticeCooldownSeconds) ||
+       body.dobNoticeCooldownSeconds < 10 || body.dobNoticeCooldownSeconds > 180))
+    return json({ok:false,error:"Jeda notifikasi harus 10–180 detik"},400);
+  if (body.dobHelpText !== undefined &&
+      (typeof body.dobHelpText !== "string" || body.dobHelpText.length > 120))
+    return json({ok:false,error:"Teks contoh maksimal 120 karakter"},400);
   const settings=normalizeSettings(body);
   try {
     await env.NUMEROLOGY_CONFIG_R2.put(OBJECT_KEY,JSON.stringify(settings),{
