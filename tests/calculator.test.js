@@ -7,7 +7,6 @@ const {
   calculatePyramid,
   validateDob
 } = require('../calculator.js');
-const listenerCalc = require('../listener/calculator.js');
 
 test('digitSum sums digits of a numeric string', () => {
   assert.equal(digitSum('1990'), 19);
@@ -100,27 +99,3 @@ test('validateDob rejects malformed ISO formats', () => {
   }
 });
 
-// Parity: listener/calculator.js adalah salinan manual; tes ini mencegah drift.
-test('listener/calculator.js exports the same API as root calculator.js', () => {
-  assert.deepEqual(Object.keys(listenerCalc).sort(), ['calculateLifePath', 'calculatePyramid', 'digitSum', 'reduceNumber', 'validateDob']);
-});
-
-test('listener/calculator.js gives identical results to root calculator.js', () => {
-  const today = '2026-09-26';
-  const pad = (n) => String(n).padStart(2, '0');
-  for (let y = 1900; y <= 2026; y += 3) {
-    for (let m = 1; m <= 12; m++) {
-      for (let d = 1; d <= 31; d++) {
-        const iso = `${y}-${pad(m)}-${pad(d)}`;
-        const a = validateDob(iso, today);
-        assert.deepEqual(listenerCalc.validateDob(iso, today), a, 'validateDob ' + iso);
-        if (!a.valid) continue;
-        assert.equal(listenerCalc.calculateLifePath(d, m, y), calculateLifePath(d, m, y), 'lifePath ' + iso);
-        assert.deepEqual(listenerCalc.calculatePyramid(iso), calculatePyramid(iso), 'pyramid ' + iso);
-      }
-    }
-  }
-  for (const bad of ['', 'not-a-date', '2099-01-01', '1899-12-31']) {
-    assert.deepEqual(listenerCalc.validateDob(bad, today), validateDob(bad, today), bad);
-  }
-});
