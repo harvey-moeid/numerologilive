@@ -20,7 +20,7 @@ jobs:
 
       - name: Syntax check all JS files
         run: |
-          for f in app.js calculator.js interpretations.js; do
+          for f in app.js calculator.js interpretations.js live-status.mjs live-overlay.mjs live-engine.mjs functions/_lib/tiktok-proxy.mjs 'functions/api/tiktok/[action].js'; do
             echo "Checking $f"
             node --check "$f"
           done
