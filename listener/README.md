@@ -39,31 +39,25 @@ Listener **tidak otomatis nyala** saat server start — harus di-toggle ON dari 
 
 1. Daftar akun gratis di [eulerstream.com](https://www.eulerstream.com).
 2. Buat API key dari dashboard mereka.
-3. Set sebagai environment variable `SIGN_API_KEY` (lokal di `.env`, atau di Render dashboard).
+3. Set sebagai environment variable `SIGN_API_KEY` (lokal di `.env`, atau di pengaturan environment platform hosting).
 
 Tier gratis EulerStream sudah cukup untuk pemakaian personal (satu listener, satu live pada satu waktu). Kalau butuh volume lebih besar, EulerStream juga punya paket berbayar.
 
-## Deploy ke Render
+## Deploy listener secara manual
 
-Dipakai dengan plan **gratis** (lihat `render.yaml` di root repo, `plan: free`) — cocok untuk kebutuhan "aktif saat dipakai saja, bukan 24/7":
-- Service otomatis tidur setelah ±15 menit tanpa traffic (hemat, gratis).
-- Listener TikTok sendiri tetap nurut ke toggle admin, tidak otomatis connect walau service sedang "bangun".
-- Kalau service sempat tidur, saat kamu buka panel admin akan ada jeda cold-start 30–60 detik sebelum halaman merespons — normal, bukan error.
-- Selama overlay dibuka di OBS/app streaming (koneksi WebSocket aktif), service tetap "bangun" sepanjang live.
-- Kalau butuh benar-benar 24/7 tanpa jeda, upgrade plan Render ke Starter dan ubah `plan: free` di `render.yaml` jadi `plan: starter`.
+Listener adalah service Node.js yang dapat dijalankan secara lokal atau di platform hosting Node.js pilihan. Repositori ini **tidak menyertakan workflow GitHub Actions untuk deploy Render maupun file Blueprint `render.yaml`**.
 
-### Cara cepat (pakai Blueprint)
-1. Dashboard Render → **New +** → **Blueprint** → hubungkan repo ini.
-2. Render otomatis baca `render.yaml` di root repo dan buat Web Service `numerologi-tiktok-listener` dengan root dir `listener`.
-3. Saat deploy pertama, isi Environment Variable `TIKTOK_USERNAME` (tanpa `@`), `ADMIN_TOKEN` (bebas, ini password untuk panel admin), dan `SIGN_API_KEY` (dari eulerstream.com). `GIFT_MIN_COINS` dan `LIKE_THRESHOLD` opsional.
+Jika memilih membuat Web Service di Render secara manual:
+1. Buat Web Service baru dan hubungkan repository ini.
+2. Set Root Directory: `listener`, Build Command: `npm install`, dan Start Command: `npm start`.
+3. Atur `TIKTOK_USERNAME`, `ADMIN_TOKEN`, dan `SIGN_API_KEY` melalui environment variables. `GIFT_MIN_COINS` dan `LIKE_THRESHOLD` opsional.
+4. Pastikan URL service dapat dijangkau sebelum mengaktifkan listener dari panel admin.
 
-### Cara manual
-1. New + Web Service, Root Directory `listener`, Build Command `npm install`, Start Command `npm start`.
-2. Tambahkan Environment Variables `TIKTOK_USERNAME`, `ADMIN_TOKEN`, dan `SIGN_API_KEY` (plus `GIFT_MIN_COINS`/`LIKE_THRESHOLD` jika mau ubah default).
-
-Setelah deploy:
+Untuk Render, URL umumnya:
 - Panel admin: `https://<nama-service>.onrender.com/admin.html`
-- Overlay (Browser Source OBS): `https://<nama-service>.onrender.com/overlay.html`
+- Overlay OBS: `https://<nama-service>.onrender.com/overlay.html`
+
+Penghapusan Blueprint dari GitHub **tidak otomatis menghentikan atau menghapus service yang sudah ada di akun Render**. Kelola layanan tersebut langsung melalui dashboard Render jika tidak lagi digunakan.
 
 ## Troubleshooting
 
