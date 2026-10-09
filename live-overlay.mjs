@@ -1,9 +1,11 @@
 import { LiveEngine } from "/live-engine.mjs";
+import { DEFAULT_SETTINGS, normalizeSettings, formatReading } from "/overlay-settings.mjs";
 
 const $ = id => document.getElementById(id);
 const qp = new URLSearchParams(location.search);
 const clamped = (value, fallback) => { const n = Number(value); return Number.isSafeInteger(n) && n >= 1 && n <= 100000 ? n : fallback; };
-const likes = clamped(qp.get("likes"),400), gift = clamped(qp.get("gift"),1);
+let settings = normalizeSettings(DEFAULT_SETTINGS);
+let likes = clamped(qp.get("likes"),settings.likeThreshold), gift = clamped(qp.get("gift"),settings.giftMinimum);
 const engine = new LiveEngine({likeThreshold:likes, giftMinimum:gift});
 $("giftHint").textContent = "gift ≥ " + gift + " koin";
 $("likeHint").textContent = likes + " like";
@@ -19,11 +21,12 @@ function showCard(item) {
   $("person").textContent = "@" + item.nickname;
   $("lifeNumber").textContent = n;
   $("lifeName").textContent = info.title;
-  $("lifeReading").textContent = info.summary;
+  $("lifeReading").textContent = formatReading(info,settings.contexts);
   const card = $("card");
   card.dataset.via = item.via === "like" ? "like" : "gift";
   $("idle").hidden = true;
   card.hidden = false;
+  applyVisibility();
   // Restart entrance animation for consecutive readings without hiding their content.
   card.style.animation = "none";
   void card.offsetWidth;
@@ -33,9 +36,11 @@ function advanceQueue() {
   clearTimeout(displayTimer);
   if (!displayQueue.length) { $("card").hidden = true; $("idle").hidden = false; return; }
   showCard(displayQueue.shift());
-  displayTimer = setTimeout(advanceQueue, clamped(qp.get("duration"),13) * 1000);
+  displayTimer = setTimeout(advanceQueue, clamped(qp.get("duration"),settings.durationSeconds) * 1000);
 }
 function handleEvent(event) {
+  if (event?.event === "gift" && !settings.giftsEnabled) return;
+  if (event?.event === "like" && !settings.likesEnabled) return;
   const result = engine.handle(event);
   if (!result) return;
   if (result.type === "pending") {
@@ -49,6 +54,49 @@ function handleEvent(event) {
     displayQueue.push(result);
     if (displayQueue.length > 20) displayQueue.shift();
     if ($("card").hidden) advanceQueue();
+  }
+}
+function applyVisibility() {
+  const display = (selector, enabled) => {
+    const el=document.querySelector(selector);
+    if (el) el.hidden=!enabled;
+  };
+  display(".brand-plaque",settings.showBrand);
+  display(".brand-ornament-left",settings.showBrand);
+  display(".brand-ornament-right",settings.showBrand);
+  display(".reason-wrap",settings.showReason);
+  display(".recipient-label",settings.showUsername);
+  display("#person",settings.showUsername);
+  display(".number-orbit",settings.showNumber);
+  display("#lifeName",settings.showTitle);
+  display(".disclaimer",settings.showDisclaimer);
+  display(".steps",settings.showInstructions);
+}
+async function reloadSettings() {
+  try {
+    const response=await fetch("/api/overlay-config",{cache:"no-store"});
+    if (!response.ok) return;
+    const data=await response.json();
+    if (!data?.ok || !data.settings) return;
+    settings=normalizeSettings(data.settings);
+    likes=clamped(qp.get("likes"),settings.likeThreshold);
+    gift=clamped(qp.get("gift"),settings.giftMinimum);
+    engine.likeThreshold=likes;
+    engine.giftMinimum=gift;
+    $("giftHint").textContent=settings.giftsEnabled?"gift ≥ "+gift+" koin":"gift dinonaktifkan";
+    $("likeHint").textContent=settings.likesEnabled?likes+" like":"like dinonaktifkan";
+    document.querySelector(".brand strong").textContent=settings.siteName;
+    document.querySelector(".idle h1").textContent=settings.idleTitle;
+    document.querySelector(".idle-intro").textContent=settings.idleIntro;
+    document.querySelector(".disclaimer").textContent=settings.footerNote;
+    applyVisibility();
+    if (qp.get("preview") === "1") {
+      showCard({ nickname: "penonton_live", iso: "1996-11-16", via: "gift", giftName: "Rose" });
+    } else if (!$("card").hidden) {
+      // Rerender the displayed context on the next result to avoid replacing a reading midstream.
+    }
+  } catch {
+    // Preserve last known valid configuration on temporary network/storage failures.
   }
 }
 async function request(path, auth=false) {
@@ -129,3 +177,7 @@ if (fromFragment) {
   if (saved) activate(saved);
 }
 }
+
+// Fetch public configuration without sending any admin key to the browser.
+reloadSettings();
+if (qp.get("preview") !== "1") setInterval(reloadSettings,30000);

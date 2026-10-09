@@ -73,6 +73,30 @@ node --check live-engine.mjs
 
 Unit test meliputi kalkulator, parser tanggal lahir LIVE, pemicu gift/like, serta autentikasi proxy dan penanganan kegagalan API.
 
+
+## Panel admin tanpa D1 (Cloudflare R2 JSON)
+
+Buka **`/admin.html`** pada deployment Pages khusus repo ini. Panel menyediakan:
+- Pilih beberapa konteks bacaan: umum, cinta, karier, kekuatan, tantangan, atau saran.
+- Atur minimum koin gift dan like kumulatif, aktif/nonaktif pemicu, dan durasi tampilan kartu.
+- Edit nama brand, judul/deskripsi layar tunggu, dan disclaimer.
+- Tampilkan/sembunyikan nama penonton, nomor, judul, label gift/like, petunjuk, dan catatan.
+- Pratinjau di browser melalui `/live.html?preview=1` tanpa event TikTok asli.
+
+**Tidak menggunakan D1, KV, ataupun layanan listener baru.** Pengaturan disimpan sebagai **satu objek JSON** `settings/overlay.json` pada bucket R2 privat melalui binding Cloudflare Pages Functions. Overlay mengakses konfigurasi publik yang sudah disanitasi dari `GET /api/overlay-config`; token admin tidak diekspos. Perubahan diambil oleh overlay setiap sekitar 30 detik, lalu berlaku untuk pembacaan berikutnya. Query OBS `?likes=`, `?gift=`, `?duration=` tetap dapat dipakai untuk override khusus sumber OBS.
+
+### Konfigurasi (wajib untuk menyimpan)
+
+1. Cloudflare → R2 Object Storage → buat bucket privat, misalnya `numerologilive-config`. Tidak perlu menyalakan public bucket URL.
+2. Di **Pages project yang terhubung dengan repo `numerologilive`**, buka Settings → Bindings → Add → **R2 bucket**. Pilih bucket tersebut dan gunakan nama binding **`NUMEROLOGY_CONFIG_R2`**. Pasang untuk Production (dan Preview bila perlu).
+3. Settings → Variables and Secrets → tambahkan secret **`NUMEROLOGY_ADMIN_TOKEN`** yang benar-benar acak, panjang 32–512 karakter. **Berbeda** dari `TLK_API_KEY` dan `TLK_OVERLAY_TOKEN`. Jangan simpan nilainya di GitHub atau URL OBS.
+4. Pastikan `TLK_API_KEY` dan `TLK_OVERLAY_TOKEN` tetap dikonfigurasi seperti sebelumnya. Deploy ulang Pages setelah menambah binding/secret.
+5. Kunjungi `/admin.html`, masukkan token admin, atur opsi, lalu klik **Simpan ke R2**. Bila file JSON belum ada, backend memberikan nilai default; save pertama membuatnya.
+
+Admin API: `GET/PUT /api/admin/settings` membutuhkan `Authorization: Bearer NUMEROLOGY_ADMIN_TOKEN`, membatasi ukuran payload, dan tidak menyediakan CORS publik. Jangan memasang cache atau proxy publik di depan endpoint admin. Sebagai lapisan tambahan, disarankan membatasi `/admin.html` dan `/api/admin/*` melalui Cloudflare Access; kode tetap memverifikasi token meski Access tidak dikonfigurasi.
+
+**Catatan deployment:** README lama menyatakan domain `numerology.muidsoft.com` masih terikat ke Pages project dari repo lain. Fitur admin belum otomatis muncul di domain tersebut sampai Pages yang benar dipasang. Pengaturan konektor masih dikelola via Cloudflare secret; panel ini **tidak mengubah API key di runtime**.
+
 ## Privasi dan catatan produk
 
 Kalkulasi situs utama tetap dilakukan di browser; tanggal lahir yang diisikan ke kalkulator utama tidak dikirim ke server. Untuk LIVE, **komentar berasal dari TikTok** dan konektor pusat menyimpan history event sementara dalam memori server; overlay tidak mengirim atau menyimpan ulang tanggal lahir ke database website. Hasil numerologi untuk hiburan dan refleksi, bukan ramalan pasti atau diagnosis.
