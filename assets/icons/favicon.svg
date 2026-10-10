@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Jalur Numerology">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#302142"/><stop offset="1" stop-color="#121225"/></linearGradient>
+    <linearGradient id="star" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3d5"/><stop offset="1" stop-color="#d9a86e"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="17" fill="url(#bg)"/>
+  <rect x="3" y="3" width="58" height="58" rx="14" fill="none" stroke="#e5c18c" stroke-opacity=".55"/>
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#e5c18c" stroke-opacity=".24"/>
+  <path fill="url(#star)" d="M32 9l5.4 17.6L55 32l-17.6 5.4L32 55l-5.4-17.6L9 32l17.6-5.4z"/>
+  <circle cx="32" cy="32" r="4" fill="#2c203b"/>
+</svg>
