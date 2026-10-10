@@ -35,6 +35,18 @@ Jangan menyimpan secret di GitHub, file publik, `index.html`, atau JavaScript fr
 
 **Catatan domain:** Pada pemeriksaan 9 Oktober 2026, `numerology.muidsoft.com` masih terikat ke Pages project `numerologi-angka-hidup-deploy` yang memakai **repo lain**. Commit ke `numerologilive` tidak otomatis mengganti deployment website yang memakai repo lain. Hubungkan Pages project khusus ke repo ini terlebih dahulu; jangan pindahkan domain sebelum project baru lolos verifikasi.
 
+## Desain website & panel admin (2026-10)
+
+- Halaman utama memakai desain **celestial editorial**: navy gelap, tipografi kontras, aksen emas lembut, dekorasi berbasis CSS, dan formulir tanggal lahir yang mudah digunakan di ponsel.
+- Alur kalkulator → hasil tetap sepenuhnya di browser. Hitung menggunakan submit form tanpa refresh, pengelolaan fokus untuk pembaca layar, dan batas tanggal menurut waktu lokal perangkat (bukan UTC).
+- Halaman hasil menampilkan kartu Angka Hidup, bagan piramida interaktif, tafsiran per aspek, serta tombol bagikan/hitung ulang. Seluruh ID kalkulator lama dipertahankan.
+- Favicon SVG lokal disimpan dalam `assets/icons/favicon.svg` tanpa CDN eksternal.
+- Panel `/admin.html` mendapat navigasi cepat antarseksi dan kontrol simpan yang mudah dijangkau di layar kecil. API, skema R2, dan token tidak berubah.
+- Layout menyesuaikan desktop/tablet/ponsel, menghormati `prefers-reduced-motion`; overlay OBS tetap di `/live.html?preview=1`.
+- Tes regresi struktur ada di `tests/website-ui.test.mjs`; dijalankan bersama `node --test tests/` di GitHub Actions.
+
+**Deployment:** Perubahan di repo ini hanya tayang pada Pages project yang terhubung ke `harvey-moeid/numerologilive`. Pastikan domain dan binding sesuai instruksi sebelumnya.
+
 ## Desain premium LIVE Overlay
 
 Overlay `/live.html` menggunakan tema *celestial luxury*: gerbang kosmik, kristal, aksen emas, kartu numerologi bercahaya, dan efek atmosfer yang dibuat dari SVG serta CSS lokal. Desain adaptif untuk **OBS portrait (9:16) maupun landscape (16:9)** dan menyediakan animasi yang mengikuti pengaturan *reduced motion*. Tidak memakai screenshot statis yang berisi angka atau teks palsu: semuanya tetap diperbarui oleh event asli.
