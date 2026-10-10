@@ -29,9 +29,10 @@
       <div class="webhook-copy"><input id="webhookUrl" type="text" readonly spellcheck="false" autocomplete="off" aria-label="Alamat webhook bertoken" placeholder="Memuat URL aman…"><button type="button" id="copyWebhookUrl">Salin URL</button></div>
       <p id="webhookStatus" class="notice" role="status" aria-live="polite"></p>
     </section>
+    <nav class="quick-nav" aria-label="Navigasi pengaturan"><a href="#webhookTitle">Webhook</a><a href="#sectionReading">Pembacaan</a><a href="#sectionTrigger">Trigger</a><a href="#sectionParser">Tanggal lahir</a><a href="#sectionCopy">Konten</a><a href="#sectionElements">Elemen</a></nav>
     <div class="workspace">
     <form id="settingsForm" class="form-stack">
-      <section class="card"><div class="sectionhead"><div><p class="eyebrow">01 • PEMBACAAN</p><h3>Konteks yang Ditampilkan</h3></div><span class="hint">Pilih satu atau lebih</span></div>
+      <section class="card" id="sectionReading"><div class="sectionhead"><div><p class="eyebrow">01 • PEMBACAAN</p><h3>Konteks yang Ditampilkan</h3></div><span class="hint">Pilih satu atau lebih</span></div>
         <p class="help">Hasil numerologi tetap berdasarkan angka hidup penonton. Pilih aspek apa saja yang akan muncul dalam kartu hasil.</p>
         <div class="choices" id="contextChoices">
           <label><input type="checkbox" name="contexts" value="general"><span>✧ <b>Kepribadian umum</b><small>Makna angka hidup</small></span></label>
@@ -42,14 +43,14 @@
           <label><input type="checkbox" name="contexts" value="advice"><span>☾ <b>Saran kehidupan</b><small>Langkah reflektif</small></span></label>
         </div>
       </section>
-      <section class="card"><div class="sectionhead"><div><p class="eyebrow">02 • TRIGGER</p><h3>Gift, Like & Durasi</h3></div></div>
+      <section class="card" id="sectionTrigger"><div class="sectionhead"><div><p class="eyebrow">02 • TRIGGER</p><h3>Gift, Like & Durasi</h3></div></div>
         <div class="toggle-row"><div><strong>Aktifkan gift</strong><small>Penonton membuka hasil setelah gift yang memenuhi syarat</small></div><input type="checkbox" id="giftsEnabled"></div>
         <label for="giftMinimum">Minimum nilai gift (koin)</label><input id="giftMinimum" type="number" min="1" max="100000" required>
         <div class="toggle-row"><div><strong>Aktifkan like</strong><small>Hitung like kumulatif dari akun penonton yang sama</small></div><input type="checkbox" id="likesEnabled"></div>
         <label for="likeThreshold">Like untuk membuka hasil</label><input id="likeThreshold" type="number" min="1" max="100000" required>
         <label for="durationSeconds">Durasi kartu hasil (detik)</label><input id="durationSeconds" type="number" min="1" max="120" required>
       </section>
-      <section class="card"><div class="sectionhead"><div><p class="eyebrow">03 • SMART PARSER</p><h3>Tanggal Lahir TikTok</h3></div><span class="hint">Tanpa AI, tanpa biaya token</span></div>
+      <section class="card" id="sectionParser"><div class="sectionhead"><div><p class="eyebrow">03 • SMART PARSER</p><h3>Tanggal Lahir TikTok</h3></div><span class="hint">Tanpa AI, tanpa biaya token</span></div>
         <p class="help">Baca komentar tanggal lahir dengan validasi kalender. Tanggal salah tidak akan dianggap benar, dan gift/like tidak membuka hasil tanpa tanggal valid.</p>
         <label for="dobMode">Mode pembacaan</label>
         <select id="dobMode"><option value="flexible">Fleksibel • berbagai format Indonesia</option><option value="strict">Ketat • hanya DD/MM/YYYY</option></select>
@@ -64,13 +65,13 @@
         <div class="parser-test"><input id="dobTestInput" type="text" maxlength="300" placeholder="Misal: aku lahir 16 nov 96"><button id="dobTestButton" type="button">Uji Parser</button></div>
         <p id="dobTestResult" class="help test-result" role="status" aria-live="polite">Masukkan contoh komentar untuk melihat hasil.</p>
       </section>
-      <section class="card"><div class="sectionhead"><div><p class="eyebrow">04 • KONTEN</p><h3>Teks Overlay</h3></div></div>
+      <section class="card" id="sectionCopy"><div class="sectionhead"><div><p class="eyebrow">04 • KONTEN</p><h3>Teks Overlay</h3></div></div>
         <label for="siteName">Nama brand</label><input id="siteName" type="text" maxlength="50">
         <label for="idleTitle">Judul layar tunggu</label><input id="idleTitle" type="text" maxlength="90">
         <label for="idleIntro">Deskripsi layar tunggu</label><textarea id="idleIntro" rows="3" maxlength="300"></textarea>
         <label for="footerNote">Catatan hasil</label><textarea id="footerNote" rows="2" maxlength="130"></textarea>
       </section>
-      <section class="card"><div class="sectionhead"><div><p class="eyebrow">05 • ELEMEN</p><h3>Tampilkan / Sembunyikan</h3></div></div>
+      <section class="card" id="sectionElements"><div class="sectionhead"><div><p class="eyebrow">05 • ELEMEN</p><h3>Tampilkan / Sembunyikan</h3></div></div>
         <div class="toggles">
           <label><input type="checkbox" id="showBrand"> Nama brand di header</label>
           <label><input type="checkbox" id="showUsername"> Nama penonton</label>
