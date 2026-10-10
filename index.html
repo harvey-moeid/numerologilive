@@ -1,1 +1,147 @@
-<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Jalur Numerology - Kalkulator Angka Hidup Gratis Tanpa Login</title><meta name="description" content="Hitung Angka Hidupmu secara gratis, tanpa login. Masukkan tanggal lahir dan dapatkan tafsiran numerologi dalam hitungan detik."><link rel="canonical" href="https://numerology.muidsoft.com/"><meta property="og:type" content="website"><meta property="og:title" content="Jalur Numerology - Kalkulator Angka Hidup Gratis"><meta property="og:description" content="Masukkan tanggal lahir, pahami Angka Hidupmu, dan gunakan hasilnya sebagai bahan refleksi."><meta property="og:url" content="https://numerology.muidsoft.com/"><meta property="og:image" content="https://numerology.muidsoft.com/assets/og/cover.png"><meta property="og:locale" content="id_ID"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Jalur Numerology - Kalkulator Angka Hidup Gratis"><meta name="twitter:description" content="Masukkan tanggal lahir, pahami Angka Hidupmu, dan gunakan hasilnya sebagai bahan refleksi."><meta name="twitter:image" content="https://numerology.muidsoft.com/assets/og/cover.png"><link rel="icon" href="/assets/icons/favicon.ico"><link rel="stylesheet" href="styles.css"></head><body><div class="wrap"><header class="top"><div class="logo" aria-hidden="true">&#128302;</div><h1>Jalur<span>Numerology</span></h1></header><section id="landing"><div class="hero"><h2>Temukan Angka Hidupmu</h2><p>Masukkan tanggal lahir, pahami Angka Hidupmu, dan gunakan hasilnya sebagai bahan refleksi.</p></div><aside id="liveNow" class="live-now hidden" aria-live="polite"><strong>● LIVE TikTok sedang berlangsung</strong><span id="liveAccount"></span></aside><div class="card"><label for="dob">Tanggal Lahir</label><input type="date" id="dob" aria-describedby="dobErr"><div class="err" id="dobErr" role="alert"></div><button class="btn btn-primary" id="calcBtn" disabled>Hitung Angka Hidupku</button></div><p class="disclaimer">Numerologi adalah praktik reflektif untuk hiburan dan perenungan diri, bukan metode ilmiah yang tervalidasi maupun alat diagnosis. Tanggal lahirmu tidak disimpan di server mana pun.</p><noscript><p style="text-align:center;color:#c9c2ea">Kalkulator ini membutuhkan JavaScript untuk menghitung Angka Hidupmu. Silakan aktifkan JavaScript di browser Anda.</p></noscript></section><section id="result" class="hidden"><div class="result-head"><button class="back" id="backBtn" aria-label="Kembali">&larr;</button><div><h2>Hasil Perhitungan</h2><small id="dobLabel"></small></div></div><div class="main-number"><div class="big" id="lifeNum">-</div><h3 id="lifeTitle">-</h3><p id="lifeSummary">-</p></div><div class="card"><p class="chart-title">Bagan Numerologi</p><p class="chart-sub">Reduksi digit hari, bulan, dan tahun lahir</p><div id="pyramid" style="display:flex;justify-content:center"></div><div class="readbox"><h3>Cara Membaca Bagan</h3><div class="step"><div class="num">1</div><p>Tanggal lahir dipecah menjadi hari, bulan, dan dua bagian tahun.<br><small>Contoh: 12 04 19 94</small></p></div><div class="step"><div class="num">2</div><p>Setiap pasangan angka direduksi menjadi satu digit, lalu dijumlahkan bertahap ke atas.</p></div><div class="step"><div class="num">3</div><p>Hasil akhir di puncak bagan menjadi salah satu angka penting dalam tafsiran ini.</p></div></div><p class="grid4-hint">Ketuk salah satu kartu untuk melihat detail tafsirannya.</p><div class="grid4" id="pyramidGrid"><button type="button" class="mini" data-cat="jiwa">Jiwa<b id="mJiwa">-</b></button><button type="button" class="mini" data-cat="hati">Hati<b id="mHati">-</b></button><button type="button" class="mini" data-cat="karisma">Karisma<b id="mKarisma">-</b></button><button type="button" class="mini" data-cat="tantangan">Tantangan<b id="mTantangan">-</b></button></div><div id="pyramidDetail" class="pyramid-detail hidden" role="region" aria-live="polite"><h4 id="pdLabel">-</h4><p class="pd-caption" id="pdCaption">-</p><p id="pdText">-</p></div></div><div class="section"><h3>Kekuatan</h3><ul id="lifeStrengths"></ul></div><div class="section"><h3>Tantangan</h3><ul id="lifeChallenges"></ul></div><div class="section"><h3>Saran Refleksi</h3><ul id="lifeAdvice"></ul></div><div class="section"><h3>Hubungan &amp; Interaksi Sosial</h3><p id="lifeRelationships">-</p></div><div class="section"><h3>Karier &amp; Arah Aktivitas</h3><p id="lifeCareer">-</p></div><button class="btn btn-primary" id="shareBtn">Bagikan Hasil</button><button class="btn btn-secondary" id="resetBtn">Hitung Lagi</button><p class="disclaimer">Hasil ini bersifat reflektif, bukan kepastian masa depan, diagnosis, maupun nasihat medis, psikologis, atau finansial.</p></section></div><div class="toast" id="toast" role="status" aria-live="polite"></div><script src="calculator.js"></script><script src="interpretations.js"></script><script src="app.js"></script><script type="module" src="/live-status.mjs"></script></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c0b1a">
+  <meta name="description" content="Temukan Angka Hidup dan bagan numerologi dari tanggal lahirmu. Gratis, tanpa login, perhitungan langsung di perangkatmu.">
+  <link rel="canonical" href="https://numerology.muidsoft.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="id_ID">
+  <meta property="og:title" content="Jalur Numerology — Temukan Angka Hidupmu">
+  <meta property="og:description" content="Kenali makna Angka Hidupmu melalui perhitungan numerologi gratis, privat, dan tanpa login.">
+  <meta property="og:url" content="https://numerology.muidsoft.com/">
+  <meta name="twitter:card" content="summary">
+  <title>Jalur Numerology — Kalkulator Angka Hidup Gratis</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Lewati navigasi</a>
+  <div class="page-glow" aria-hidden="true"></div>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Jalur Numerology, beranda">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span class="brand-type"><strong>JALUR <em>NUMEROLOGY</em></strong><small>YOUR NUMBERS, YOUR STORY</small></span>
+      </a>
+      <nav class="top-nav" aria-label="Navigasi utama">
+        <a href="#cara-kerja" id="howLink">Cara kerja</a>
+        <a href="/live.html?preview=1" target="_blank" rel="noopener noreferrer" class="nav-live"><span aria-hidden="true">◈</span> Lihat LIVE</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="landing" aria-labelledby="heroTitle">
+        <aside id="liveNow" class="live-now hidden" aria-live="polite"><span class="live-pulse" aria-hidden="true"></span><strong>TikTok LIVE sedang berlangsung</strong><span id="liveAccount"></span></aside>
+        <div class="landing-layout">
+          <div class="hero-copy">
+            <p class="overline"><span aria-hidden="true">✧</span> RUANG REFLEKSI NUMEROLOGI <span aria-hidden="true">✧</span></p>
+            <h1 id="heroTitle">Setiap angka<br>punya <span>cerita.</span></h1>
+            <p class="hero-lead">Tanggal lahirmu adalah awal kisah. Jelajahi Angka Hidup, kekuatan diri, dan sudut pandang baru melalui numerologi.</p>
+            <div class="hero-benefits" aria-label="Keunggulan kalkulator">
+              <span><i aria-hidden="true">✓</i> Gratis selamanya</span>
+              <span><i aria-hidden="true">✓</i> Tanpa login</span>
+              <span><i aria-hidden="true">✓</i> Privat di browser</span>
+            </div>
+            <div class="cosmic-art" aria-hidden="true">
+              <span class="art-star star-a">✦</span><span class="art-star star-b">✧</span><span class="art-star star-c">✦</span>
+              <span class="orbit orbit-one"></span><span class="orbit orbit-two"></span>
+              <span class="art-center"><small>THE LIFE PATH</small><b>∞</b><small>DISCOVER YOURSELF</small></span>
+              <span class="orbit-number n-one">1</span><span class="orbit-number n-two">7</span><span class="orbit-number n-three">9</span>
+            </div>
+          </div>
+
+          <div class="calculator-wrap">
+            <section class="calculator-panel" aria-labelledby="calculatorTitle">
+              <div class="panel-topline"><span>✦ &nbsp; PERSONAL READING</span><span>01 / 03</span></div>
+              <div class="panel-intro">
+                <div class="panel-symbol" aria-hidden="true">☾</div>
+                <h2 id="calculatorTitle">Temukan Angka Hidupmu</h2>
+                <p>Mulai perjalanan kecil untuk mengenal sisi dirimu lewat angka.</p>
+              </div>
+              <form id="calcForm" novalidate>
+                <label for="dob">Tanggal lahir kamu</label>
+                <div class="date-field"><span aria-hidden="true">◷</span><input type="date" id="dob" name="dob" required aria-describedby="dobHelp dobErr"></div>
+                <p class="field-help" id="dobHelp">Pilih tanggal, bulan, dan tahun lahir yang benar.</p>
+                <p class="err" id="dobErr" role="alert" aria-live="assertive"></p>
+                <button type="submit" class="btn btn-primary" id="calcBtn" disabled>Ungkap Angka Hidupku <span aria-hidden="true">↗</span></button>
+              </form>
+              <div class="panel-bottom"><span aria-hidden="true">♢</span><p>Perhitungan berlangsung di perangkatmu. Kami tidak menyimpan tanggal lahirmu.</p></div>
+            </section>
+            <div class="panel-footnote"><span aria-hidden="true">✧</span> Satu tanggal. Banyak sudut pandang. <span aria-hidden="true">✧</span></div>
+          </div>
+        </div>
+        <section class="journey" id="cara-kerja" aria-labelledby="journeyTitle">
+          <div class="section-heading"><p class="overline">PROSESNYA SEDERHANA</p><h2 id="journeyTitle">Tiga langkah, satu cerita.</h2></div>
+          <div class="journey-grid">
+            <article class="journey-step"><span>01</span><div><h3>Masukkan tanggal</h3><p>Pilih tanggal lahirmu di kalkulator.</p></div></article>
+            <article class="journey-step"><span>02</span><div><h3>Kenali angkamu</h3><p>Lihat Angka Hidup dan bagan angka personal.</p></div></article>
+            <article class="journey-step"><span>03</span><div><h3>Renungkan maknanya</h3><p>Baca kekuatan, tantangan, relasi, dan arah karier.</p></div></article>
+          </div>
+        </section>
+        <p class="disclaimer landing-disclaimer">Numerologi adalah praktik reflektif untuk hiburan dan perenungan diri, bukan metode ilmiah yang tervalidasi, diagnosis, atau kepastian masa depan.</p>
+        <noscript><p class="no-script">Aktifkan JavaScript untuk menggunakan kalkulator numerologi.</p></noscript>
+      </section>
+
+      <section id="result" class="hidden" tabindex="-1" aria-labelledby="resultTitle">
+        <div class="result-head">
+          <button type="button" class="back" id="backBtn" aria-label="Kembali ke kalkulator">←</button>
+          <div><p class="overline">PEMBACAAN PERSONAL</p><h2 id="resultTitle">Hasil Angka Hidupmu</h2><small id="dobLabel"></small></div>
+          <span class="result-emblem" aria-hidden="true">✧</span>
+        </div>
+        <div class="main-number">
+          <div class="result-orbit" aria-hidden="true"></div>
+          <p class="result-overline">YOUR LIFE PATH NUMBER</p>
+          <div class="big" id="lifeNum">–</div>
+          <h3 id="lifeTitle">–</h3>
+          <p id="lifeSummary">–</p>
+          <div class="result-rule" aria-hidden="true">✦</div>
+          <span class="result-tag">ANGKA HIDUP • NUMEROLOGI</span>
+        </div>
+
+        <div class="result-content">
+          <section class="card chart-card" aria-labelledby="chartTitle">
+            <div class="card-heading"><span class="card-icon" aria-hidden="true">◇</span><div><h3 id="chartTitle" class="chart-title">Bagan Numerologi</h3><p class="chart-sub">Reduksi digit hari, bulan, dan tahun lahir</p></div></div>
+            <div id="pyramid" class="pyramid"></div>
+            <div class="readbox"><h3>Cara membaca bagan</h3>
+              <div class="step"><div class="num">1</div><p>Tanggal lahir dipecah menjadi hari, bulan, dan dua bagian tahun.<br><small>Contoh: 12 04 19 94</small></p></div>
+              <div class="step"><div class="num">2</div><p>Setiap pasangan angka direduksi menjadi satu digit dan dihitung bertahap.</p></div>
+              <div class="step"><div class="num">3</div><p>Angka di puncak bagan menjadi salah satu bagian dalam tafsiran.</p></div>
+            </div>
+            <p class="grid4-hint">Pilih kartu untuk melihat makna setiap angka.</p>
+            <div class="grid4" id="pyramidGrid" aria-label="Detail bagan numerologi">
+              <button type="button" class="mini" data-cat="jiwa">Jiwa<b id="mJiwa">–</b></button>
+              <button type="button" class="mini" data-cat="hati">Hati<b id="mHati">–</b></button>
+              <button type="button" class="mini" data-cat="karisma">Karisma<b id="mKarisma">–</b></button>
+              <button type="button" class="mini" data-cat="tantangan">Tantangan<b id="mTantangan">–</b></button>
+            </div>
+            <div id="pyramidDetail" class="pyramid-detail hidden" role="region" aria-live="polite">
+              <h4 id="pdLabel">–</h4><p class="pd-caption" id="pdCaption">–</p><p id="pdText">–</p>
+            </div>
+          </section>
+
+          <div class="reading-grid">
+            <section class="section"><span class="reading-icon" aria-hidden="true">✦</span><h3>Kekuatan</h3><ul id="lifeStrengths"></ul></section>
+            <section class="section"><span class="reading-icon" aria-hidden="true">◇</span><h3>Tantangan</h3><ul id="lifeChallenges"></ul></section>
+            <section class="section"><span class="reading-icon" aria-hidden="true">☾</span><h3>Saran refleksi</h3><ul id="lifeAdvice"></ul></section>
+            <section class="section"><span class="reading-icon" aria-hidden="true">♡</span><h3>Hubungan & interaksi</h3><p id="lifeRelationships">–</p></section>
+            <section class="section"><span class="reading-icon" aria-hidden="true">✧</span><h3>Karier & arah aktivitas</h3><p id="lifeCareer">–</p></section>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button type="button" class="btn btn-primary" id="shareBtn">Bagikan Hasil <span aria-hidden="true">↗</span></button>
+          <button type="button" class="btn btn-secondary" id="resetBtn">Hitung Tanggal Lain</button>
+        </div>
+        <p class="disclaimer">Tafsiran ini untuk hiburan dan refleksi, bukan kepastian masa depan ataupun nasihat medis, psikologis, atau finansial.</p>
+      </section>
+    </main>
+    <footer class="site-footer"><span>✦ &nbsp; JALUR NUMEROLOGY</span><small>Ruang untuk mengenal diri, satu angka dalam satu waktu.</small></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/calculator.js"></script>
+  <script src="/interpretations.js"></script>
+  <script src="/app.js"></script>
+  <script type="module" src="/live-status.mjs"></script>
+</body>
+</html>
