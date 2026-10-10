@@ -33,7 +33,7 @@ Jangan menyimpan secret di GitHub, file publik, `index.html`, atau JavaScript fr
 
 **Di Render (service `tiktok-live-konektor`)**: set `API_KEY`, cek `GET /api/health`, dan klik **Start LIVE** saat akun TikTok benar-benar LIVE. Backend-to-backend dari Cloudflare tidak memerlukan `API_ALLOWED_ORIGINS` karena tidak mengirim header `Origin` browser.
 
-**Catatan domain:** Pada pemeriksaan 9 Oktober 2026, `numerology.muidsoft.com` masih terikat ke Pages project `numerologi-angka-hidup-deploy` yang memakai **repo lain**. Commit ke `numerologilive` tidak otomatis mengganti deployment website yang memakai repo lain. Hubungkan Pages project khusus ke repo ini terlebih dahulu; jangan pindahkan domain sebelum project baru lolos verifikasi.
+**Catatan domain (diperiksa 10 Oktober 2026):** `numerology.muidsoft.com` berada di Pages project `numerologi-angka-hidup-deploy`. Metadata GitHub masih menampilkan `repo_name` lama, tetapi `repo_id` cocok dengan `harvey-moeid/numerologilive`, dan deployment produksi terbaru menggunakan commit `11ca5af` dari repo ini (status berhasil). Jangan pindahkan domain hanya berdasarkan label metadata yang lama.
 
 ## Desain website & panel admin (2026-10)
 
@@ -45,7 +45,7 @@ Jangan menyimpan secret di GitHub, file publik, `index.html`, atau JavaScript fr
 - Layout menyesuaikan desktop/tablet/ponsel, menghormati `prefers-reduced-motion`; overlay OBS tetap di `/live.html?preview=1`.
 - Tes regresi struktur ada di `tests/website-ui.test.mjs`; dijalankan bersama `node --test tests/` di GitHub Actions.
 
-**Deployment:** Perubahan di repo ini hanya tayang pada Pages project yang terhubung ke `harvey-moeid/numerologilive`. Pastikan domain dan binding sesuai instruksi sebelumnya.
+**Deployment:** Cloudflare Pages project `numerologi-angka-hidup-deploy` telah dikonfirmasi menerima commit repo ini pada 10 Oktober 2026. Saat memperbarui HTML/CSS/JS bersama, gunakan URL asset baru atau versi fingerprint agar cache browser tidak menyajikan halaman HTML baru dengan CSS/JS lama. Patch perbaikan memakai `styles-v2.css`, `app-v2.js`, dan `admin-v2.css` serta mempertahankan file lama untuk kompatibilitas.
 
 ## Desain premium LIVE Overlay
 
@@ -113,7 +113,7 @@ Buka **`/admin.html`** pada deployment Pages khusus repo ini. Panel menyediakan:
 
 Admin API: `GET/PUT /api/admin/settings` membutuhkan `Authorization: Bearer NUMEROLOGY_ADMIN_TOKEN`, membatasi ukuran payload, dan tidak menyediakan CORS publik. Jangan memasang cache atau proxy publik di depan endpoint admin. Sebagai lapisan tambahan, disarankan membatasi `/admin.html` dan `/api/admin/*` melalui Cloudflare Access; kode tetap memverifikasi token meski Access tidak dikonfigurasi.
 
-**Catatan deployment:** README lama menyatakan domain `numerology.muidsoft.com` masih terikat ke Pages project dari repo lain. Fitur admin belum otomatis muncul di domain tersebut sampai Pages yang benar dipasang. Pengaturan konektor masih dikelola via Cloudflare secret; panel ini **tidak mengubah API key di runtime**.
+**Catatan deployment:** Domain `numerology.muidsoft.com` telah diverifikasi terhubung ke Pages deployment commit `11ca5af` dari repository ini pada 10 Oktober 2026. Pastikan binding R2 dan Secrets tersedia di environment Production. Pengaturan konektor tetap melalui Cloudflare Secrets; panel ini **tidak mengubah API key di runtime**.
 
 ## Privasi dan catatan produk
 
