@@ -1,7 +1,7 @@
 import {json} from "../../_lib/overlay-config.mjs";
 const PREFIX="webhook-events/";
-function same(a,b) {
-  if(typeof a!=="string"||typeof b!=="string"||b.length<32||a.length!==b.length)return false;
+function same(a,b,minLength=2) {
+  if(typeof a!=="string"||typeof b!=="string"||b.length<minLength||b.length>512||a.length!==b.length)return false;
   let result=0;
   for(let i=0;i<a.length;i++)result|=a.charCodeAt(i)^b.charCodeAt(i);
   return result===0;
@@ -39,7 +39,7 @@ export async function onRequestPost({request,env}) {
 export async function onRequestGet({request,env}) {
   const expected=env.TLK_OVERLAY_TOKEN;
   const supplied=/^Bearer\s+(.+)$/i.exec(request.headers.get("Authorization")||"")?.[1]||"";
-  if(!same(supplied,expected))return json({ok:false,error:"Unauthorized"},401);
+  if(!same(supplied,expected,24))return json({ok:false,error:"Unauthorized"},401);
   const bucket=env.NUMEROLOGY_CONFIG_R2;
   if(!bucket)return json({ok:false,error:"R2 unavailable"},503);
   const query=new URL(request.url).searchParams;

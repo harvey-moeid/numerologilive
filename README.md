@@ -108,7 +108,7 @@ Admin API: `GET/PUT /api/admin/settings` membutuhkan `Authorization: Bearer NUME
 Kalkulasi situs utama tetap dilakukan di browser; tanggal lahir yang diisikan ke kalkulator utama tidak dikirim ke server. Untuk LIVE, **komentar berasal dari TikTok** dan konektor pusat menyimpan history event sementara dalam memori server; overlay tidak mengirim atau menyimpan ulang tanggal lahir ke database website. Hasil numerologi untuk hiburan dan refleksi, bukan ramalan pasti atau diagnosis.
 
 ## Webhook LIVE (admin copy URL)
-Set `NUMEROLOGY_WEBHOOK_SECRET` as a separate random 32+ character Cloudflare Pages secret.
+Set `NUMEROLOGY_WEBHOOK_SECRET` as a separate 2–512 character Cloudflare Pages secret. The minimum is **2 characters**; use 32+ random characters in production whenever possible, because 2-character secrets can be guessed very easily.
 After admin login, `/admin.html` retrieves the complete protected webhook URL through
 `GET /api/admin/webhook-url`. Click **Salin URL** and paste into TikTok LIVE Konektor →
 Integrasi Webhook (POST JSON, events `chat`, `like`, `gift`).
