@@ -38,7 +38,7 @@ export async function onRequestPost({request,env}) {
 }
 export async function onRequestGet({request,env}) {
   const expected=env.TLK_OVERLAY_TOKEN;
-  const supplied=/^Bearer\\s+(.+)$/i.exec(request.headers.get("Authorization")||"")?.[1]||"";
+  const supplied=/^Bearer\s+(.+)$/i.exec(request.headers.get("Authorization")||"")?.[1]||"";
   if(!same(supplied,expected))return json({ok:false,error:"Unauthorized"},401);
   const bucket=env.NUMEROLOGY_CONFIG_R2;
   if(!bucket)return json({ok:false,error:"R2 unavailable"},503);
@@ -51,7 +51,7 @@ export async function onRequestGet({request,env}) {
     do {
       const page=await bucket.list({prefix:PREFIX+date+"/",cursor,limit:1000});
       for(const object of page.objects||[]){
-        const match=/\\/(\\d{13})-/.exec(object.key);
+        const match=/\/(\d{13})-/.exec(object.key);
         if(match&&Number(match[1])>since)found.push(object.key);
       }
       cursor=page.truncated?page.cursor:undefined;
