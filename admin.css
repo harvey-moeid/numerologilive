@@ -41,3 +41,30 @@ code{font-size:.85em;color:#ffe0b0;overflow-wrap:anywhere}
 
 .webhook-panel{margin-bottom:20px}.webhook-copy{display:flex;gap:10px;align-items:stretch}.webhook-copy input{flex:1;min-width:0}.webhook-copy button{flex:none;padding:11px 17px;background:linear-gradient(135deg,#ffdb9e,#c89565);border:0;border-radius:12px;color:#211626;font-weight:800}
 @media(max-width:580px){.webhook-copy{flex-direction:column}.webhook-copy button{width:100%}}
+
+
+/* Settings navigation and touch-friendly control refinements */
+.quick-nav {display:flex;align-items:center;gap:9px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:0 2px 17px;margin-bottom:19px;scroll-snap-type:x proximity;}
+.quick-nav a {flex:none;scroll-snap-align:start;padding:10px 14px;font-size:12px;font-weight:750;color:#e9def2;white-space:nowrap;background:#211c32;border:1px solid #78668277;border-radius:999px;transition:background .15s,border-color .15s;}
+.quick-nav a:hover,.quick-nav a:focus-visible {color:#ffebc3;background:#342744;border-color:#e8c18b;}
+#sectionReading,#sectionTrigger,#sectionParser,#sectionCopy,#sectionElements,#webhookTitle {scroll-margin-top:30px;}
+.choices label,.toggles label {cursor:pointer;transition:border-color .18s,background .18s;}
+.choices label:hover,.toggles label:hover {border-color:#b89a7a;}
+.choices label:focus-within,.toggles label:focus-within {outline:2px solid #ebcc90;outline-offset:2px;}
+#settingsForm .actions {position:sticky;bottom:12px;z-index:4;padding:13px;border-radius:16px;background:#141223ed;border:1px solid #90775766;box-shadow:0 15px 35px #0009;backdrop-filter:blur(14px);}
+#settingsForm .actions button {justify-content:center;}
+#settingsForm .actions #save {flex:1 1 185px;}
+#settingsForm .actions .secondary {flex:0 1 auto;}
+.webhook-copy input {font-size:12px;letter-spacing:.02em;}
+@media(max-width:700px) {
+  .quick-nav {margin-bottom:12px;gap:7px;}
+  .quick-nav a {padding:10px 12px;}
+  #settingsForm .actions {bottom:max(8px,env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;}
+  #settingsForm .actions #save {grid-column:span 2;}
+  #settingsForm .actions button {min-height:44px;}
+  .sectionhead {align-items:flex-start;}
+  .sectionhead .hint {text-align:right;}
+}
+@media(prefers-reduced-motion:reduce) {
+  * {animation:none!important;transition:none!important;scroll-behavior:auto!important;}
+}
