@@ -22,6 +22,13 @@
     <section class="intro"><div><p class="eyebrow">PENGATURAN LIVE</p><h2>Kendalikan isi overlay tanpa mengedit kode.</h2>
     <p>Semua pengaturan disimpan sebagai JSON privat di Cloudflare R2. Perubahan berlaku untuk overlay saat memuat ulang konfigurasi.</p></div>
     <div class="status"><span class="dot" id="statusDot"></span><span id="liveStatus">Memeriksa konektor…</span><button type="button" id="checkLive">Periksa</button></div></section>
+    <section class="card webhook-panel" aria-labelledby="webhookTitle">
+      <div class="sectionhead"><div><p class="eyebrow">INTEGRASI TIKTOK</p><h3 id="webhookTitle">Webhook LIVE • Salin URL</h3></div></div>
+      <p class="help">Salin URL ini ke TikTok LIVE Konektor → Integrasi Webhook. Aktifkan event chat, like, gift. URL berisi token rahasia: jangan bagikan atau masukkan ke kode publik.</p>
+      <label for="webhookUrl">URL endpoint penerima (POST JSON)</label>
+      <div class="webhook-copy"><input id="webhookUrl" type="text" readonly spellcheck="false" autocomplete="off" aria-label="Alamat webhook bertoken" placeholder="Memuat URL aman…"><button type="button" id="copyWebhookUrl">Salin URL</button></div>
+      <p id="webhookStatus" class="notice" role="status" aria-live="polite"></p>
+    </section>
     <div class="workspace">
     <form id="settingsForm" class="form-stack">
       <section class="card"><div class="sectionhead"><div><p class="eyebrow">01 • PEMBACAAN</p><h3>Konteks yang Ditampilkan</h3></div><span class="hint">Pilih satu atau lebih</span></div>

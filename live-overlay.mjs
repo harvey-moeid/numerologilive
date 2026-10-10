@@ -10,7 +10,7 @@ const engine = new LiveEngine({likeThreshold:likes, giftMinimum:gift});
 $("giftHint").textContent = "gift ≥ " + gift + " koin";
 $("likeHint").textContent = likes + " like";
 let token = ""; let started = false; let polling = false; let timer = null; let lastStatus = 0;
-let displayTimer = null; let pendingTimer = null; const displayQueue = [];
+let webhookSince = Date.now(); let displayTimer = null; let pendingTimer = null; const displayQueue = [];
 const setConnection = message => { $("connectionMessage").textContent = message; };
 function showCard(item) {
   const [year,month,day] = item.iso.split("-").map(Number);
@@ -136,6 +136,19 @@ async function poll() {
     } else {
       for (const event of events.slice().reverse()) handleEvent(event);
     }
+    // Receive authenticated webhook deliveries as an additional event source.
+    // The existing poll remains a fallback; LiveEngine deduplicates by event.id.
+    const watermark=Date.now();
+    try {
+      const res=await fetch("/api/tiktok/webhook?since="+webhookSince,{
+        headers:{Authorization:"Bearer "+token},cache:"no-store"
+      });
+      if(res.ok){
+        const feed=await res.json();
+        for(const event of feed.events||[])handleEvent(event);
+        webhookSince=watermark;
+      }
+    } catch { /* regular connector polling remains available */ }
     if (Date.now() - lastStatus > 14000) {
       lastStatus = Date.now();
       const status = await request("status");

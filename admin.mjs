@@ -63,6 +63,7 @@ $("authForm").addEventListener("submit",async event=>{
     $("adminToken").value="";
     message("authStatus","");
     checkLive();
+    loadWebhookUrl();
   }catch(error){message("authStatus",error.message);adminToken="";}
   finally{$("connectAdmin").disabled=false;}
 });
@@ -81,7 +82,7 @@ $("settingsForm").addEventListener("submit",async event=>{
   finally{$("save").disabled=false;}
 });
 $("reset").addEventListener("click",()=>{render(DEFAULT_SETTINGS);message("saveStatus","Default sudah dimuat. Klik Simpan untuk menerapkannya ke overlay.");});
-$("logout").addEventListener("click",()=>{adminToken="";$("panel").hidden=true;$("auth").hidden=false;message("saveStatus","");});
+$("logout").addEventListener("click",()=>{$("webhookUrl").value="";adminToken="";$("panel").hidden=true;$("auth").hidden=false;message("saveStatus","");});
 $("checkLive").addEventListener("click",checkLive);
 
 $("dobTestButton").addEventListener("click",()=>{
@@ -94,4 +95,22 @@ $("dobTestButton").addEventListener("click",()=>{
     :result.status==="invalid"
       ?"⚠ Tanggal tidak valid atau belum lengkap. "+(result.reason==="ambiguous"?"Kirim satu tanggal saja.":"Coba format DD/MM/YYYY.")
       :"Komentar biasa: diabaikan. Coba tulis tanggal lahir.";
+});
+
+async function loadWebhookUrl() {
+  const input=$("webhookUrl"), status=$("webhookStatus");
+  input.value="";status.textContent="Memeriksa webhook…";
+  try {
+    const response=await fetch("/api/admin/webhook-url",{cache:"no-store",headers:{Authorization:"Bearer "+adminToken}});
+    const result=await response.json();
+    if(!response.ok || !result.ok || !result.url) throw Error(result.error||"Webhook belum siap");
+    input.value=result.url;
+    status.textContent="Endpoint siap. Salin dan tempel ke Integrasi Webhook pada TikTok LIVE Konektor.";
+  } catch(error) {status.textContent=error.message;}
+}
+$("copyWebhookUrl").addEventListener("click",async()=>{
+  const value=$("webhookUrl").value;
+  if(!value)return;
+  try {await navigator.clipboard.writeText(value);$("webhookStatus").textContent="URL tersalin. Perlakukan sebagai rahasia.";}
+  catch { $("webhookUrl").focus();$("webhookUrl").select();$("webhookStatus").textContent="Salin teks yang telah dipilih secara manual."; }
 });

@@ -38,3 +38,6 @@ code{font-size:.85em;color:#ffe0b0;overflow-wrap:anywhere}
 .test-result{border-left:2px solid #c4a06e;padding:9px 12px;margin:0;background:#ffffff06}
 .mock-parser{color:#eac996;font-size:11px;line-height:1.4}
 @media(max-width:480px){.parser-test{flex-direction:column}.parser-test button{width:100%}}
+
+.webhook-panel{margin-bottom:20px}.webhook-copy{display:flex;gap:10px;align-items:stretch}.webhook-copy input{flex:1;min-width:0}.webhook-copy button{flex:none;padding:11px 17px;background:linear-gradient(135deg,#ffdb9e,#c89565);border:0;border-radius:12px;color:#211626;font-weight:800}
+@media(max-width:580px){.webhook-copy{flex-direction:column}.webhook-copy button{width:100%}}

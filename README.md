@@ -106,3 +106,15 @@ Admin API: `GET/PUT /api/admin/settings` membutuhkan `Authorization: Bearer NUME
 ## Privasi dan catatan produk
 
 Kalkulasi situs utama tetap dilakukan di browser; tanggal lahir yang diisikan ke kalkulator utama tidak dikirim ke server. Untuk LIVE, **komentar berasal dari TikTok** dan konektor pusat menyimpan history event sementara dalam memori server; overlay tidak mengirim atau menyimpan ulang tanggal lahir ke database website. Hasil numerologi untuk hiburan dan refleksi, bukan ramalan pasti atau diagnosis.
+
+## Webhook LIVE (admin copy URL)
+Set `NUMEROLOGY_WEBHOOK_SECRET` as a separate random 32+ character Cloudflare Pages secret.
+After admin login, `/admin.html` retrieves the complete protected webhook URL through
+`GET /api/admin/webhook-url`. Click **Salin URL** and paste into TikTok LIVE Konektor →
+Integrasi Webhook (POST JSON, events `chat`, `like`, `gift`).
+The receiver `POST /api/tiktok/webhook?secret=...` validates the token before
+writing time-bounded event objects to the private `NUMEROLOGY_CONFIG_R2` bucket.
+The OBS overlay reads those through a distinct bearer-protected GET on the same route
+and keeps its existing TikTok connector polling as fallback. Do not publish the URL.
+Webhook payloads currently have no HMAC signature, so keep its secret long and rotate
+if exposed. Consider adding R2 lifecycle expiration for `webhook-events/` objects.
